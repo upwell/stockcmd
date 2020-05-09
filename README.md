@@ -46,6 +46,15 @@
 ```
 加入后第一次显示会需要一点时间去抓取历史数据，之后就会很快了。
 
+- 快捷命令显示分组
+有个快捷的script可以显示分组，需要把scripts/sc拷贝到`/usr/local/bin/`下面
+```bash
+> sc hold
+or
+# 不输入分组名称，默认会使用hold分组
+> sc 
+```
+
 - 从分组中删除某只股票
 ```bash
 > stockcmd group remove hold
