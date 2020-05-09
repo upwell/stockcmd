@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+exe_path=$(which stockcmd)
+if [ $? -ne 0 ]; then
+  echo "stockcmd not found, install it first"
+  exit 1
+fi
+
+if [ $# -eq 1 ]; then
+    group="$1"
+else
+    group="hold"
+fi
+
+$exe_path show $group
