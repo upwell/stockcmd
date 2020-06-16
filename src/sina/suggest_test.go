@@ -12,6 +12,6 @@ func TestSuggest(t *testing.T) {
 		t.Error("failed to get suggest result, empty")
 		return
 	}
-	assert.Equal(t, ret[0]["code"], "sz002475")
+	assert.Equal(t, ret[0]["code"], "sz.002475")
 	assert.Equal(t, ret[0]["name"], "立讯精密")
 }

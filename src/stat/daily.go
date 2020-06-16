@@ -28,6 +28,7 @@ type DailyStat struct {
 	ChgToday     float64
 	Last         float64
 	ChgLast      float64
+	PE           float64 `sc:"PE"`
 	ChgMonth     float64 `sc:"chg_m"`
 	ChgLastMonth float64 `sc:"chg_lm"`
 	ChgYear      float64 `sc:"chg_y"`
@@ -38,6 +39,7 @@ type DailyStat struct {
 	Chg60        float64
 	Chg90        float64
 	Code         string
+	PB           float64 `sc:"PB"`
 }
 
 func Fields(s interface{}) []string {
@@ -99,6 +101,7 @@ func (ds *DailyStat) Row() []string {
 	row = append(row, ChgString(ds.ChgToday))
 	row = append(row, Float64String(ds.Last))
 	row = append(row, ChgString(ds.ChgLast))
+	row = append(row, Float64String(ds.PE))
 	row = append(row, Float64String(ds.ChgMonth))
 	row = append(row, Float64String(ds.ChgLastMonth))
 	row = append(row, Float64String(ds.ChgYear))
@@ -109,6 +112,7 @@ func (ds *DailyStat) Row() []string {
 	row = append(row, Float64String(ds.Chg60))
 	row = append(row, Float64String(ds.Chg90))
 	row = append(row, ds.Code)
+	row = append(row, Float64String(ds.PB))
 
 	return row
 }
@@ -167,6 +171,9 @@ func chgWithDf(df *dataframe.DataFrame, fn dataframe.FilterDataFrameFn) float64 
 
 func chgDays(df *dataframe.DataFrame, days int) float64 {
 	n := df.NRows()
+	if n == 0 {
+		return 0.00
+	}
 	lastRow := df.Row(0, false, dataframe.SeriesName)
 
 	r := days - 1
@@ -243,9 +250,9 @@ func GetDailyState(code string) (*DailyStat, error) {
 		return nil, errors.Wrapf(err, "failed to get records from db for [%s]", code)
 	}
 
-	if len(df.Series) == 0 {
-		return nil, errors.Errorf("empty records from db for [%s]", code)
-	}
+	//if df.NRows() == 0 {
+	//	return nil, errors.Errorf("empty records from db for [%s]", code)
+	//}
 
 	name := store.GetName(code, true)
 	hq, err := sina.GetLivePrice(code)
@@ -253,13 +260,28 @@ func GetDailyState(code string) (*DailyStat, error) {
 		return nil, errors.Wrapf(err, "failed to get hq from sina")
 	}
 
-	lastRecord := df.Row(0, false, dataframe.SeriesName)
+	hasRecords := true
+	var lastRecord map[interface{}]interface{}
+	if df.NRows() == 0 {
+		logger.SugarLog.Info("empty history records")
+		hasRecords = false
+	} else {
+		lastRecord = df.Row(0, false, dataframe.SeriesName)
+	}
+	chgLast := 0.00
+	pe := 0.00
+	pb := 0.00
+	if hasRecords {
+		chgLast = lastRecord["pctChg"].(float64)
+		pe = lastRecord["peTTM"].(float64)
+		pb = lastRecord["pbMRQ"].(float64)
+	}
 	ds := &DailyStat{
 		Name:         name,
 		ChgToday:     hq.ChgToday,
 		Now:          hq.Now,
 		Last:         hq.Last,
-		ChgLast:      lastRecord["pctChg"].(float64),
+		ChgLast:      chgLast,
 		ChgMonth:     chgWithDf(df, thisMonthFilterFn),
 		ChgLastMonth: chgWithDf(df, lastMonthFilterFn),
 		ChgYear:      chgWithDf(df, thisYearFilterFn),
@@ -270,6 +292,8 @@ func GetDailyState(code string) (*DailyStat, error) {
 		Chg60:        chgDays(df, 60),
 		Chg90:        chgDays(df, 90),
 		Code:         code,
+		PE:           pe,
+		PB:           pb,
 	}
 	return ds, nil
 }

@@ -3,14 +3,28 @@ package baostock_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jinzhu/now"
 	"github.com/rocketlaunchr/dataframe-go/imports"
+
 	"hehan.net/my/stockcmd/baostock"
+	"hehan.net/my/stockcmd/logger"
 )
+
+func setup() {
+	logger.InitLogger()
+}
+
+func TestMain(m *testing.M) {
+	fmt.Println("inside TestMain")
+	setup()
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestBaoStock_LoginLogout(t *testing.T) {
 	fmt.Println("start testing ..")
@@ -27,9 +41,21 @@ func TestBaoStock_LoginLogout(t *testing.T) {
 
 func TestBaoStock_GetDailyKData(t *testing.T) {
 	baostock.BS.Login()
+
+	fromDate, _ := now.Parse("2020-04-01")
+	toDate, _ := now.Parse("2020-05-01")
+
+	rs, _ := baostock.BS.GetDailyKData("sz.002475", fromDate, toDate)
+	fmt.Println(rs.RespMsg.BodyAttrs)
+
+	baostock.BS.Logout()
+}
+
+func TestBaoStock_QueryHistoryKDataPage(t *testing.T) {
+	baostock.BS.Login()
 	fromDate, _ := now.Parse("2019-05-01")
 	toDate, _ := now.Parse("2020-05-01")
-	rs, err := baostock.BS.QueryHistoryKDataPage(1, 200, "sz.002223",
+	rs, err := baostock.BS.QueryHistoryKDataPage(1, 200, "sz.002475",
 		baostock.DailyDataFields, fromDate, toDate, "d",
 		"3")
 	if err != nil {

@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"sort"
 	"sync"
+
+	"hehan.net/my/stockcmd/logger"
 
 	"github.com/olekukonko/tablewriter"
 
@@ -29,21 +30,37 @@ func showCmdF(cmd *cobra.Command, args []string) error {
 		return errors.Errorf("Group [%s] not exist", gName)
 	}
 
-	var wg sync.WaitGroup
+	retries := 0
 	rets := make([]*stat.DailyStat, 0, 32)
-	for code, _ := range g.Codes {
-		wg.Add(1)
-		go func(code string) {
-			defer wg.Done()
-			ds, err := stat.GetDailyState(code)
-			if err == nil {
-				rets = append(rets, ds)
-			} else {
-				fmt.Printf("get daily state error [%v]\n", err)
-			}
-		}(code)
+	for retries < 3 {
+		var wg sync.WaitGroup
+		var statErr error
+		for code, _ := range g.Codes {
+			wg.Add(1)
+			go func(code string) {
+				defer wg.Done()
+				ds, err := stat.GetDailyState(code)
+				if err == nil {
+					rets = append(rets, ds)
+				} else {
+					if errors.Is(err, store.ErrDBColNotMatch) {
+						statErr = err
+						logger.SugarLog.Infof("db fields changed, clean history data and get again")
+					} else {
+						logger.SugarLog.Errorf("get daily state error [%v]", err)
+					}
+				}
+			}(code)
+		}
+		wg.Wait()
+
+		retries++
+		if statErr != nil {
+			store.RecreateDailyBucket()
+		} else {
+			break
+		}
 	}
-	wg.Wait()
 
 	sort.Slice(rets, func(i, j int) bool {
 		return rets[i].ChgToday > rets[j].ChgToday

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/rocketlaunchr/dataframe-go/imports"
 
 	"github.com/rocketlaunchr/dataframe-go"
@@ -20,11 +22,21 @@ type Record struct {
 	Val  string
 }
 
+var ErrDBColNotMatch = errors.New("columns not match the expected fields, db schema might change")
+
 // the key is designed to be like:
 //     sh000001#2000-01-01T00:00:00Z
 // format: code#RFC3389 encoded time keys
 func genKey(code string, t time.Time) string {
 	return fmt.Sprintf("%s#%s", code, t.Format(time.RFC3339))
+}
+
+func RecreateDailyBucket() {
+	DB.Update(func(tx *bbolt.Tx) error {
+		tx.DeleteBucket([]byte(DailyBucketName))
+		tx.CreateBucket([]byte(DailyBucketName))
+		return nil
+	})
 }
 
 func WriteRecord(code string, t time.Time, val string) {
@@ -66,8 +78,10 @@ func GetRecords(code string, start time.Time, end time.Time) (*dataframe.DataFra
 		return df, nil
 	}
 
+	var dbErr error
+
 	DB.View(func(tx *bbolt.Tx) error {
-		FieldsStr := "date,open,high,low,close,preclose,volume,amount,pctChg"
+		FieldsStr := "date,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ"
 		c := tx.Bucket([]byte(DailyBucketName)).Cursor()
 		startKey := []byte(genKey(code, start))
 		endKey := []byte(genKey(code, end))
@@ -80,6 +94,11 @@ func GetRecords(code string, start time.Time, end time.Time) (*dataframe.DataFra
 			dataTypes[field] = float64(0)
 		}
 		for k, v := c.Seek(startKey); k != nil && bytes.Compare(k, endKey) <= 0; k, v = c.Next() {
+			csvRow := string(v)
+			if len(strings.Split(csvRow, ",")) != len(strings.Split(FieldsStr, ",")) {
+				dbErr = ErrDBColNotMatch
+			}
+
 			csvRows = append(csvRows, string(v))
 		}
 		dataTypes["date"] = imports.Converter{
@@ -97,7 +116,9 @@ func GetRecords(code string, start time.Time, end time.Time) (*dataframe.DataFra
 		csvStr := strings.Join(csvRows, "\n")
 		retDf, err := imports.LoadFromCSV(ctx, strings.NewReader(csvStr), opts)
 		if err != nil {
+			fmt.Println(err)
 			df = &dataframe.DataFrame{}
+			return nil
 		}
 		retDf.Sort(ctx, []dataframe.SortKey{
 			{Key: "date", Desc: true},
@@ -105,5 +126,10 @@ func GetRecords(code string, start time.Time, end time.Time) (*dataframe.DataFra
 		df = retDf
 		return nil
 	})
+
+	if dbErr != nil {
+		return nil, dbErr
+	}
+
 	return df, nil
 }

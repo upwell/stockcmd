@@ -220,6 +220,6 @@ func (bs *BaoStock) QueryHistoryKDataPage(curPageNum int, perPageCount int, code
 func (bs *BaoStock) GetDailyKData(code string, startDay time.Time, endDay time.Time) (*ResultSet, error) {
 	logger.SugarLog.Debugf("startDay = %v, endDay = %v", startDay, endDay)
 	return bs.QueryHistoryKDataPage(1, 200, code,
-		"date,open,high,low,close,preclose,volume,amount,pctChg", startDay, endDay, "d",
+		"date,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ", startDay, endDay, "d",
 		"3")
 }
