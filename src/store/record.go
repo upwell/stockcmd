@@ -46,6 +46,17 @@ func WriteRecord(code string, t time.Time, val string) {
 	})
 }
 
+func DeleteCodeRecords(code string) {
+	DB.Batch(func(tx *bbolt.Tx) error {
+		c := tx.Bucket([]byte(DailyBucketName)).Cursor()
+		prefix := []byte(code)
+		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+			c.Delete()
+		}
+		return nil
+	})
+}
+
 func WriteRecords(records []*Record) {
 	DB.Update(func(tx *bbolt.Tx) error {
 		for _, record := range records {

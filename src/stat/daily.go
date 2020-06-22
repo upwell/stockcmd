@@ -32,12 +32,12 @@ type DailyStat struct {
 	ChgMonth     float64 `sc:"chg_m"`
 	ChgLastMonth float64 `sc:"chg_lm"`
 	ChgYear      float64 `sc:"chg_y"`
+	Chg5         float64
+	Chg10        float64
+	Chg90        float64
 	Avg20        float64
 	Avg60        float64
 	Avg200       float64
-	Chg20        float64
-	Chg60        float64
-	Chg90        float64
 	Code         string
 	PB           float64 `sc:"PB"`
 }
@@ -105,12 +105,12 @@ func (ds *DailyStat) Row() []string {
 	row = append(row, Float64String(ds.ChgMonth))
 	row = append(row, Float64String(ds.ChgLastMonth))
 	row = append(row, Float64String(ds.ChgYear))
+	row = append(row, Float64String(ds.Chg5))
+	row = append(row, Float64String(ds.Chg10))
+	row = append(row, Float64String(ds.Chg90))
 	row = append(row, Float64String(ds.Avg20))
 	row = append(row, Float64String(ds.Avg60))
 	row = append(row, Float64String(ds.Avg200))
-	row = append(row, Float64String(ds.Chg20))
-	row = append(row, Float64String(ds.Chg60))
-	row = append(row, Float64String(ds.Chg90))
 	row = append(row, ds.Code)
 	row = append(row, Float64String(ds.PB))
 
@@ -288,8 +288,8 @@ func GetDailyState(code string) (*DailyStat, error) {
 		Avg20:        avgDays(df, 20),
 		Avg60:        avgDays(df, 60),
 		Avg200:       avgDays(df, 200),
-		Chg20:        chgDays(df, 20),
-		Chg60:        chgDays(df, 60),
+		Chg5:         chgDays(df, 5),
+		Chg10:        chgDays(df, 10),
 		Chg90:        chgDays(df, 90),
 		Code:         code,
 		PE:           pe,

@@ -221,5 +221,5 @@ func (bs *BaoStock) GetDailyKData(code string, startDay time.Time, endDay time.T
 	logger.SugarLog.Debugf("startDay = %v, endDay = %v", startDay, endDay)
 	return bs.QueryHistoryKDataPage(1, 200, code,
 		"date,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ", startDay, endDay, "d",
-		"3")
+		"2")
 }

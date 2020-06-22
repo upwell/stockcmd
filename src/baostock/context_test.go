@@ -53,11 +53,11 @@ func TestBaoStock_GetDailyKData(t *testing.T) {
 
 func TestBaoStock_QueryHistoryKDataPage(t *testing.T) {
 	baostock.BS.Login()
-	fromDate, _ := now.Parse("2019-05-01")
-	toDate, _ := now.Parse("2020-05-01")
+	fromDate, _ := now.Parse("2020-06-13")
+	toDate, _ := now.Parse("2020-07-01")
 	rs, err := baostock.BS.QueryHistoryKDataPage(1, 200, "sz.002475",
 		baostock.DailyDataFields, fromDate, toDate, "d",
-		"3")
+		"2")
 	if err != nil {
 		t.Errorf("get daily data failed [%v]", err)
 	}
