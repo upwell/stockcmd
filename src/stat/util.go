@@ -1,6 +1,11 @@
 package stat
 
-import "math"
+import (
+	"fmt"
+	"math"
+
+	"github.com/fatih/color"
+)
 
 func RoundChgRate(rate float64) float64 {
 	return math.Round(rate*100*100) / 100
@@ -8,4 +13,32 @@ func RoundChgRate(rate float64) float64 {
 
 func Round2(val float64) float64 {
 	return math.Round(val*100) / 100
+}
+
+func Float64String(f float64) string {
+	return fmt.Sprintf("%.2f", f)
+}
+
+func ChgString(chg float64) string {
+	chgStr := Float64String(chg)
+	post := ""
+	switch {
+	case chg > 3:
+		post = "✨"
+	case chg > 0:
+		post = "↑"
+	case chg == 0:
+		post = "⁃"
+	case chg < -3:
+		post = "⚡"
+	case chg < 0:
+		post = "↓"
+	}
+	chgStr = fmt.Sprintf("%s %s", chgStr, post)
+	if chg >= 3.0 {
+		chgStr = color.RedString(chgStr)
+	} else if chg <= -3.0 {
+		chgStr = color.GreenString(chgStr)
+	}
+	return chgStr
 }

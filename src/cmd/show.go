@@ -9,6 +9,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 
+	mapset "github.com/deckarep/golang-set"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"hehan.net/my/stockcmd/stat"
@@ -72,7 +73,16 @@ func showCmdF(cmd *cobra.Command, args []string) error {
 	table.SetAutoWrapText(false)
 	table.SetAutoFormatHeaders(false)
 	table.SetReflowDuringAutoWrap(false)
-	table.SetHeader(stat.Fields(stat.DailyStat{}))
+	fieldNames := stat.Fields(stat.DailyStat{})
+
+	excludeFields := mapset.NewSet("avg_200", "PB")
+	filterNames := make([]string, 0)
+	for _, field := range fieldNames {
+		if !excludeFields.Contains(field) {
+			filterNames = append(filterNames, field)
+		}
+	}
+	table.SetHeader(filterNames)
 
 	for _, ds := range rets {
 		table.Append(ds.Row())

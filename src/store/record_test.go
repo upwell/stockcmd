@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"gonum.org/v1/gonum/floats"
+
 	"github.com/rocketlaunchr/dataframe-go"
 
 	"hehan.net/my/stockcmd/store"
@@ -15,7 +17,7 @@ import (
 	"hehan.net/my/stockcmd/baostock"
 )
 
-const testCode = "sz.002475"
+const testCode = "sz.300821"
 
 func TestWriteRecord(t *testing.T) {
 	baostock.BS.Login()
@@ -75,7 +77,9 @@ func TestCalAvg(t *testing.T) {
 			opens := df.Series[idx].(*dataframe.SeriesFloat64)
 
 			avg := stat.Mean(opens.Values, nil)
-			fmt.Println(avg)
+			max := floats.Max(opens.Values)
+			min := floats.Min(opens.Values)
+			fmt.Printf("avg: %f, max: %f, min: %f\n", avg, max, min)
 		}
 	}
 }

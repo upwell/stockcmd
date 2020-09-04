@@ -3,7 +3,6 @@ package baostock
 import (
 	"strconv"
 	"strings"
-	"time"
 )
 
 func paddingZeroForString(content string, length int, direction string) string {
@@ -36,8 +35,4 @@ func paddingRightZero(content string, length int) string {
 func toMessageHeader(msgType string, msgLen int) string {
 	lenStr := paddingLeftZero(strconv.Itoa(msgLen), 10)
 	return strings.Join([]string{ClientVersion, msgType, lenStr}, MessageSplit)
-}
-
-func dateToStr(time time.Time) string {
-	return time.Format("2006-01-02")
 }

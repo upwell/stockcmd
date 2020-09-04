@@ -3,6 +3,8 @@ package sina
 import (
 	"strings"
 
+	"hehan.net/my/stockcmd/hq"
+
 	"hehan.net/my/stockcmd/logger"
 
 	"github.com/levigross/grequests"
@@ -26,7 +28,7 @@ func Suggest(input string) []map[string]string {
 		return ret
 	}
 
-	rawResult, err := ConvertGB2UTF8(resp.String())
+	rawResult, err := hq.ConvertGB2UTF8(resp.String())
 	if err != nil {
 		return ret
 	}
@@ -47,7 +49,7 @@ func Suggest(input string) []map[string]string {
 		}
 		ret = append(ret, map[string]string{
 			"name": seps[4],
-			"code": ConvertCodeBack(seps[3]),
+			"code": hq.ConvertCodeBack(seps[3]),
 		})
 	}
 	return ret

@@ -1,4 +1,4 @@
-package sina
+package hq
 
 import (
 	"bytes"
@@ -14,6 +14,15 @@ import (
 
 func ConvertGB2UTF8(raw string) (string, error) {
 	reader := transform.NewReader(bytes.NewReader([]byte(raw)), simplifiedchinese.GB18030.NewDecoder())
+	rawBytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to convert GB18030 to UTF8")
+	}
+	return string(rawBytes), nil
+}
+
+func ConvertGBK2UTF8(raw string) (string, error) {
+	reader := transform.NewReader(bytes.NewReader([]byte(raw)), simplifiedchinese.GBK.NewDecoder())
 	rawBytes, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to convert GB18030 to UTF8")

@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"hehan.net/my/stockcmd/store"
 
 	"github.com/jinzhu/now"
 	"github.com/rocketlaunchr/dataframe-go/imports"
@@ -39,16 +43,28 @@ func TestBaoStock_LoginLogout(t *testing.T) {
 	}
 }
 
+func TestBaoStock_QueryAll(t *testing.T) {
+	baostock.BS.Login()
+	defer baostock.BS.Logout()
+
+	rs, err := baostock.BS.QueryAllStock(time.Time{})
+	if err != nil {
+		t.Errorf("query failed with [%v]", err)
+	}
+
+	store.WriteBasics(rs.Data)
+}
+
 func TestBaoStock_GetDailyKData(t *testing.T) {
 	baostock.BS.Login()
+	defer baostock.BS.Logout()
 
-	fromDate, _ := now.Parse("2020-04-01")
-	toDate, _ := now.Parse("2020-05-01")
+	fromDate, _ := now.Parse("2020-08-24")
+	toDate, _ := now.Parse("2020-08-25")
 
 	rs, _ := baostock.BS.GetDailyKData("sz.002475", fromDate, toDate)
 	fmt.Println(rs.RespMsg.BodyAttrs)
 
-	baostock.BS.Logout()
 }
 
 func TestBaoStock_QueryHistoryKDataPage(t *testing.T) {
@@ -102,4 +118,35 @@ func TestBaoStock_QueryHistoryKDataPage(t *testing.T) {
 		t.Errorf("load data to dataframe failed [%v]", err)
 	}
 	fmt.Println(df)
+}
+
+func TestBaoStockConnNumber(t *testing.T) {
+	var ops uint64
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			instance := baostock.NewBaoStockInstance()
+			err := instance.Login()
+			if err != nil {
+				fmt.Println(err.Error())
+				os.Exit(-1)
+			}
+			atomic.AddUint64(&ops, 1)
+			fmt.Println(ops)
+			time.Sleep(time.Minute * 5)
+		}()
+	}
+
+	wg.Wait()
+}
+
+func TestTimeCompare(t *testing.T) {
+	var t1 time.Time
+	t1 = now.With(t1).BeginningOfDay()
+	t2 := now.BeginningOfDay()
+	fmt.Println(t1.After(t2))
+	fmt.Println(t1.Equal(t2))
 }

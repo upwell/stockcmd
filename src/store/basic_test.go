@@ -36,3 +36,8 @@ func TestGetName(t *testing.T) {
 	name := GetName(code, true)
 	assert.Equal(t, name, "紫光国微")
 }
+
+func TestGetBasics(t *testing.T) {
+	ret := GetCodes()
+	assert.Equal(t, ret[0], "sh.000001")
+}

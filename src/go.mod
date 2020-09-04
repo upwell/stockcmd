@@ -8,6 +8,7 @@ require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c // indirect
+	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fatih/color v1.9.0
@@ -24,6 +25,7 @@ require (
 	github.com/ory/dockertest v3.3.5+incompatible // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rocketlaunchr/dataframe-go v0.0.0-20200331233158-9ec5d1a942f2
+	github.com/silenceper/pool v0.0.0-20200429081406-a659d818d9aa
 	github.com/spf13/cobra v0.0.7
 	github.com/stretchr/testify v1.4.0
 	go.etcd.io/bbolt v1.3.2

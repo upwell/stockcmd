@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"hehan.net/my/stockcmd/config"
+	"hehan.net/my/stockcmd/logger"
+	"hehan.net/my/stockcmd/util"
 
 	"github.com/pkg/errors"
-	"hehan.net/my/stockcmd/logger"
 )
 
 var BS *BaoStock
@@ -41,6 +42,7 @@ func NewBaoStockInstance() *BaoStock {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", Server, ServerPort))
 	if err != nil {
 		logger.SugarLog.Fatalf("failed to connect", Server)
+		return nil
 	}
 	return &BaoStock{Conn: conn}
 }
@@ -165,6 +167,39 @@ func (bs *BaoStock) Logout() error {
 	}
 }
 
+func (bs *BaoStock) QueryAllStock(day time.Time) (*ResultSet, error) {
+	if day.IsZero() {
+		day = time.Now()
+	}
+
+	parts := []string{
+		"query_all_stock", bs.UserID, "1", "10000", util.DateToStr(day),
+	}
+	msgBody := strings.Join(parts, MessageSplit)
+	respMsg, err := bs.request(MessageTypeQueryAllStockRequest, msgBody)
+	if err != nil {
+		return nil, errors.Wrap(err, "query all stock failed")
+	}
+	if !respMsg.IsSucceed() {
+		return nil, errors.Errorf("error code [%s], error message [%s]", respMsg.ErrCode, respMsg.ErrMsg)
+	}
+
+	rs := &ResultSet{
+		MsgType:      MessageTypeGetKDataRequest,
+		ReqBodyParts: parts,
+		Fields:       []string{},
+		BS:           bs,
+	}
+
+	if len(respMsg.BodyAttrs) < 7 {
+		return nil, errors.Errorf("invalid body attrs [%s]", respMsg.BodyAttrs)
+	}
+	rs.CurPageNum, _ = strconv.Atoi(respMsg.BodyAttrs[4])
+	rs.RespMsg = respMsg
+	rs.setData(respMsg.BodyAttrs[6])
+	return rs, nil
+}
+
 //QueryHistoryKDataPage
 // code format: sh.600000
 func (bs *BaoStock) QueryHistoryKDataPage(curPageNum int, perPageCount int, code string, fields string,
@@ -189,7 +224,7 @@ func (bs *BaoStock) QueryHistoryKDataPage(curPageNum int, perPageCount int, code
 
 	parts := []string{
 		"query_history_k_data", bs.UserID, strconv.Itoa(curPageNum), strconv.Itoa(perPageCount), code,
-		fields, dateToStr(startDate), dateToStr(endDate), frequency, adjustFlag,
+		fields, util.DateToStr(startDate), util.DateToStr(endDate), frequency, adjustFlag,
 	}
 	msgBody := strings.Join(parts, MessageSplit)
 	rs := &ResultSet{

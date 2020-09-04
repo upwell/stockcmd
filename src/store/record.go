@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"hehan.net/my/stockcmd/logger"
+
 	"github.com/pkg/errors"
 
 	"github.com/rocketlaunchr/dataframe-go/imports"
@@ -127,7 +129,7 @@ func GetRecords(code string, start time.Time, end time.Time) (*dataframe.DataFra
 		csvStr := strings.Join(csvRows, "\n")
 		retDf, err := imports.LoadFromCSV(ctx, strings.NewReader(csvStr), opts)
 		if err != nil {
-			fmt.Println(err)
+			logger.SugarLog.Errorf("load csv error [%v] for [%s]", err, code)
 			df = &dataframe.DataFrame{}
 			return nil
 		}

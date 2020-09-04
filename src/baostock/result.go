@@ -36,6 +36,10 @@ func (rs *ResultSet) Next() bool {
 		logger.SugarLog.Warnf("failed to get data with error [%v]", err)
 		return false
 	}
+	if len(rspMsg.BodyAttrs) < 7 {
+		logger.SugarLog.Warnf("wrong number of body attrs of response message: [%s]", rspMsg.BodyAttrs)
+		return false
+	}
 
 	rs.CurPageNum, _ = strconv.Atoi(rspMsg.BodyAttrs[4])
 	rs.CurRowNum = 0
@@ -65,13 +69,18 @@ func (rs *ResultSet) setData(rawData string) {
 		parts := strings.Split(rawData, " ")
 		jsonData := strings.Join(parts, "")
 		// jsonData example:
-		// {"record":[["2020-01-02","20.3800","20.4800","20.1400","20.3200","20.3200","9934211","202012745.4100","0.000000"]
+		// {"record":[["2020-01-02","20.3800","20.4800","20.1400","20.3200","20.3200","9934211","202012745.4100","0.000000"]]}
 		var f map[string][][]string
 		err := json.Unmarshal([]byte(jsonData), &f)
 		if err != nil {
 			logger.SugarLog.Warnf("parse json err: [%v]", err)
-			rs.Data = nil
+			rs.Data = make([][]string, 0)
 		} else {
+			record := f["record"]
+			if len(record) == 0 || (len(rs.Fields) != 0) && len(record[0]) != len(rs.Fields) {
+				logger.SugarLog.Warnf("empty record or invalid record missing fields [%s]", jsonData)
+				rs.Data = make([][]string, 0)
+			}
 			rs.Data = f["record"]
 		}
 	}

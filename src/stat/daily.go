@@ -2,10 +2,13 @@ package stat
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"strings"
 	"time"
+
+	"hehan.net/my/stockcmd/util"
+
+	"gonum.org/v1/gonum/floats"
 
 	"hehan.net/my/stockcmd/logger"
 
@@ -32,6 +35,8 @@ type DailyStat struct {
 	ChgMonth     float64 `sc:"chg_m"`
 	ChgLastMonth float64 `sc:"chg_lm"`
 	ChgYear      float64 `sc:"chg_y"`
+	ChgMax       float64
+	ChgMin       float64
 	Chg5         float64
 	Chg10        float64
 	Chg90        float64
@@ -53,34 +58,6 @@ func Fields(s interface{}) []string {
 		fields = append(fields, display)
 	}
 	return fields
-}
-
-func Float64String(f float64) string {
-	return fmt.Sprintf("%.2f", f)
-}
-
-func ChgString(chg float64) string {
-	chgStr := Float64String(chg)
-	post := ""
-	switch {
-	case chg > 3:
-		post = "✨"
-	case chg > 0:
-		post = "↑"
-	case chg == 0:
-		post = "⁃"
-	case chg < -3:
-		post = "⚡"
-	case chg < 0:
-		post = "↓"
-	}
-	chgStr = fmt.Sprintf("%s %s", chgStr, post)
-	if chg >= 3.0 {
-		chgStr = color.RedString(chgStr)
-	} else if chg <= -3.0 {
-		chgStr = color.GreenString(chgStr)
-	}
-	return chgStr
 }
 
 func (ds *DailyStat) Row() []string {
@@ -105,14 +82,16 @@ func (ds *DailyStat) Row() []string {
 	row = append(row, Float64String(ds.ChgMonth))
 	row = append(row, Float64String(ds.ChgLastMonth))
 	row = append(row, Float64String(ds.ChgYear))
+	row = append(row, Float64String(ds.ChgMax))
+	row = append(row, Float64String(ds.ChgMin))
 	row = append(row, Float64String(ds.Chg5))
 	row = append(row, Float64String(ds.Chg10))
 	row = append(row, Float64String(ds.Chg90))
 	row = append(row, Float64String(ds.Avg20))
 	row = append(row, Float64String(ds.Avg60))
-	row = append(row, Float64String(ds.Avg200))
+	//row = append(row, Float64String(ds.Avg200))
 	row = append(row, ds.Code)
-	row = append(row, Float64String(ds.PB))
+	//row = append(row, Float64String(ds.PB))
 
 	return row
 }
@@ -169,6 +148,35 @@ func chgWithDf(df *dataframe.DataFrame, fn dataframe.FilterDataFrameFn) float64 
 	return RoundChgRate((lastClose - firstPreClose) / firstPreClose)
 }
 
+func GetMaxMin(df *dataframe.DataFrame, days int) (max float64, min float64) {
+	n := df.NRows()
+	max = 0.00
+	min = 0.00
+	if n == 0 {
+		logger.SugarLog.Debug("rows of df is 0")
+		return
+	}
+
+	r := days - 1
+	if days > n-1 {
+		r = n - 1
+	}
+	if r == 0 {
+		return
+	}
+
+	idx, err := df.NameToColumn("close")
+	if err != nil {
+		logger.SugarLog.Error("get column close failed")
+		return
+	}
+
+	closes := df.Series[idx].(*dataframe.SeriesFloat64).Values[:r]
+	max = floats.Max(closes)
+	min = floats.Min(closes)
+	return
+}
+
 func chgDays(df *dataframe.DataFrame, days int) float64 {
 	n := df.NRows()
 	if n == 0 {
@@ -200,7 +208,7 @@ func avgDays(df *dataframe.DataFrame, days int) float64 {
 	return Round2(stat.Mean(values, nil))
 }
 
-func GetDailyState(code string) (*DailyStat, error) {
+func GetDataFrame(code string) (*dataframe.DataFrame, error) {
 	t := store.GetLastTime(code)
 	endDay := now.BeginningOfDay()
 	var startDay time.Time
@@ -221,19 +229,32 @@ func GetDailyState(code string) (*DailyStat, error) {
 	startDay = now.With(startDay).BeginningOfDay()
 
 	if endDay.After(startDay) {
-		bs := baostock.NewBaoStockInstance()
-		err := bs.Login()
+		logger.SugarLog.Infof("get history data from baostock for [%s] between [%s] and [%s]", code,
+			util.DateToStr(startDay), util.DateToStr(endDay))
+		v, err := baostock.BSPool.Get()
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to login baostock")
+			return nil, errors.Wrap(err, "failed to get baostock instance from pool")
 		}
+		bs := v.(*baostock.BaoStock)
 		t1 := time.Now()
 		rs, err := bs.GetDailyKData(code, startDay, endDay)
 		if err != nil {
+			bs.Logout()
+			bs.Conn.Close()
 			return nil, errors.Wrap(err, "get daily state failed")
 		}
 		records := make([]*store.Record, 0, 1024)
 		for rs.Next() {
 			seps := rs.GetRowData()
+			skipThisRow := false
+			for _, sep := range seps {
+				if len(sep) == 0 {
+					skipThisRow = true
+				}
+			}
+			if skipThisRow {
+				continue
+			}
 			date, _ := now.Parse(seps[0])
 			records = append(records, &store.Record{
 				Code: code,
@@ -241,6 +262,7 @@ func GetDailyState(code string) (*DailyStat, error) {
 				Val:  strings.Join(seps, ","),
 			})
 		}
+		baostock.BSPool.Put(v)
 		store.WriteRecords(records)
 		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
 	}
@@ -249,13 +271,18 @@ func GetDailyState(code string) (*DailyStat, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get records from db for [%s]", code)
 	}
+	return df, nil
+}
 
-	//if df.NRows() == 0 {
-	//	return nil, errors.Errorf("empty records from db for [%s]", code)
-	//}
+func GetDailyState(code string) (*DailyStat, error) {
+	df, err := GetDataFrame(code)
+	if err != nil {
+		return nil, err
+	}
 
 	name := store.GetName(code, true)
-	hq, err := sina.GetLivePrice(code)
+	api := sina.SinaHQApi{}
+	hq, err := api.GetHQ(code)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get hq from sina")
 	}
@@ -276,6 +303,7 @@ func GetDailyState(code string) (*DailyStat, error) {
 		pe = lastRecord["peTTM"].(float64)
 		pb = lastRecord["pbMRQ"].(float64)
 	}
+	max, min := GetMaxMin(df, 30)
 	ds := &DailyStat{
 		Name:         name,
 		ChgToday:     hq.ChgToday,
@@ -285,6 +313,8 @@ func GetDailyState(code string) (*DailyStat, error) {
 		ChgMonth:     chgWithDf(df, thisMonthFilterFn),
 		ChgLastMonth: chgWithDf(df, lastMonthFilterFn),
 		ChgYear:      chgWithDf(df, thisYearFilterFn),
+		ChgMax:       RoundChgRate((hq.Now - max) / max),
+		ChgMin:       RoundChgRate((hq.Now - min) / min),
 		Avg20:        avgDays(df, 20),
 		Avg60:        avgDays(df, 60),
 		Avg200:       avgDays(df, 200),

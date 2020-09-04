@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"hehan.net/my/stockcmd/stat"
 	"hehan.net/my/stockcmd/store"
 )
 
@@ -18,6 +21,15 @@ var RemoveKDataCmd = &cobra.Command{
 	Example: ` remove_kdata sz.002475`,
 	Args:    cobra.MinimumNArgs(1),
 	RunE:    removeKDataCmdF,
+}
+
+var ShowKDataCmd = &cobra.Command{
+	Use:     "show_kdata [code]",
+	Short:   "show kdata of certain code",
+	Long:    `show kdata of certain code`,
+	Example: ` show_kdata sz.002475`,
+	Args:    cobra.MinimumNArgs(1),
+	RunE:    showKDataCmdf,
 }
 
 var RemoveAllKData = &cobra.Command{
@@ -41,6 +53,19 @@ func removeKDataCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func showKDataCmdf(cmd *cobra.Command, args []string) error {
+	code := args[0]
+
+	df, err := stat.GetDataFrame(code)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println(df.Table())
+	return nil
+}
+
 func removeAllKDataCmdF(cmd *cobra.Command, args []string) error {
 	store.RecreateDailyBucket()
 	return nil
@@ -60,6 +85,6 @@ func removeGroupKDataCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	DevCmd.AddCommand(RemoveKDataCmd, RemoveGroupKDataCmd, RemoveAllKData)
+	DevCmd.AddCommand(RemoveKDataCmd, RemoveGroupKDataCmd, RemoveAllKData, ShowKDataCmd)
 	rootCmd.AddCommand(DevCmd)
 }
