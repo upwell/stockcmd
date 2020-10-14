@@ -239,8 +239,7 @@ func GetDataFrame(code string) (*dataframe.DataFrame, error) {
 		t1 := time.Now()
 		rs, err := bs.GetDailyKData(code, startDay, endDay)
 		if err != nil {
-			bs.Logout()
-			bs.Conn.Close()
+			baostock.BSPool.Close(v)
 			return nil, errors.Wrap(err, "get daily state failed")
 		}
 		records := make([]*store.Record, 0, 1024)

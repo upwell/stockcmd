@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 
@@ -121,6 +122,7 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 	codes := store.GetCodes()
 
 	fmt.Printf("fetch hq data ...\n")
+	start := time.Now()
 	var wg sync.WaitGroup
 	hqs := make([]*store.StockHQ, 0, 512)
 	for _, code := range codes {
@@ -149,7 +151,7 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 
 	wg.Wait()
 	store.BulkWriteHQ(hqs)
-	fmt.Printf("fetch hq data done, start fetch history records ... \n")
+	fmt.Printf("fetch hq data done, take [%s], start fetch history records ... \n", time.Since(start))
 
 	for _, code := range codes {
 		wg.Add(1)
