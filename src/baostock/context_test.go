@@ -91,7 +91,11 @@ func TestBaoStock_QueryHistoryKDataPage(t *testing.T) {
 	//fmt.Println(df)
 	csvRows := make([]string, 0, 1024)
 	csvRows = append(csvRows, strings.Join(rs.Fields, ","))
-	for rs.Next() {
+	for {
+		hasNext, err := rs.Next()
+		if !hasNext || err != nil {
+			break
+		}
 		csvRows = append(csvRows, strings.Join(rs.GetRowData(), ","))
 	}
 	csvStr := strings.Join(csvRows, "\n")

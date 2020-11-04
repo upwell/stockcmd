@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	mapset "github.com/deckarep/golang-set"
 	"github.com/olekukonko/tablewriter"
 
 	"hehan.net/my/stockcmd/tencent"
@@ -24,6 +25,13 @@ var StatCmd = &cobra.Command{
 	Short:   "Show stat of stocks",
 	Example: "stat",
 	RunE:    statCmdF,
+}
+
+var MyStatCmd = &cobra.Command{
+	Use:     "mystat",
+	Short:   "Show stat of my stocks",
+	Example: "mystat",
+	RunE:    myStatCmdF,
 }
 
 var FetchDataCmd = &cobra.Command{
@@ -43,9 +51,7 @@ type StatChg struct {
 var periodVar int
 var includeST bool
 
-func statCmdF(cmd *cobra.Command, args []string) error {
-	basics := store.GetBasics()
-
+func getStatChgs(basics []*store.StockBasic) []*StatChg {
 	chgs := make([]*StatChg, 0, 512)
 	endDay := now.BeginningOfDay()
 	var wg sync.WaitGroup
@@ -97,7 +103,39 @@ func statCmdF(cmd *cobra.Command, args []string) error {
 	sort.SliceStable(chgs, func(i, j int) bool {
 		return chgs[i].MaxChg < chgs[j].MaxChg
 	})
+	return chgs
+}
 
+func statCmdF(cmd *cobra.Command, args []string) error {
+	basics := store.GetBasics()
+	chgs := getStatChgs(basics)
+	printTable(chgs)
+	return nil
+}
+
+func myStatCmdF(cmd *cobra.Command, args []string) error {
+	groupNames := store.ListGroup()
+	basics := make([]*store.StockBasic, 0, 32)
+	codeSet := mapset.NewSet()
+	for _, name := range groupNames {
+		group := store.GetGroup(name)
+		for code, name := range group.Codes {
+			if !codeSet.Contains(code) {
+				basics = append(basics, &store.StockBasic{
+					Code: code,
+					Name: name,
+				})
+				codeSet.Add(code)
+			}
+		}
+	}
+
+	chgs := getStatChgs(basics)
+	printTable(chgs)
+	return nil
+}
+
+func printTable(chgs []*StatChg) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetRowLine(true)
 	table.SetAlignment(tablewriter.ALIGN_CENTER)
@@ -114,8 +152,6 @@ func statCmdF(cmd *cobra.Command, args []string) error {
 		table.Append([]string{chg.Code, chg.Name, stat.Float64String(chg.MaxChg), stat.Float64String(chg.MinChg)})
 	}
 	table.Render()
-
-	return nil
 }
 
 func fetchDataCmdF(cmd *cobra.Command, args []string) error {
@@ -132,7 +168,7 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 			defer wg.Done()
 			v, err := api.GetHQ(code)
 			if err != nil {
-				fmt.Printf("failed to get price for [%s]\n", code)
+				fmt.Printf("failed to get price for [%s] with error [%v]\n", code, err)
 				return
 			}
 			if v.IsSuspend {
@@ -172,6 +208,11 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 func init() {
 	StatCmd.Flags().IntVarP(&periodVar, "period", "p", 30, "get the <period> days of stat")
 	StatCmd.Flags().BoolVarP(&includeST, "includeST", "t", false, "exclude the st from results")
+
+	MyStatCmd.Flags().IntVarP(&periodVar, "period", "p", 30, "get the <period> days of stat")
+	MyStatCmd.Flags().BoolVarP(&includeST, "includeST", "t", false, "exclude the st from results")
+
 	rootCmd.AddCommand(StatCmd)
+	rootCmd.AddCommand(MyStatCmd)
 	rootCmd.AddCommand(FetchDataCmd)
 }

@@ -243,7 +243,16 @@ func GetDataFrame(code string) (*dataframe.DataFrame, error) {
 			return nil, errors.Wrap(err, "get daily state failed")
 		}
 		records := make([]*store.Record, 0, 1024)
-		for rs.Next() {
+		for {
+			hasNext, err := rs.Next()
+			if err != nil {
+				baostock.BSPool.Close(v)
+				return nil, errors.Wrap(err, "get daily state, error in loop")
+			}
+			if !hasNext {
+				break
+			}
+
 			seps := rs.GetRowData()
 			skipThisRow := false
 			for _, sep := range seps {

@@ -29,7 +29,11 @@ func TestWriteRecord(t *testing.T) {
 	if err != nil {
 		t.Errorf("get daily data failed [%v]", err)
 	} else {
-		for rs.Next() {
+		for {
+			hasNext, err := rs.Next()
+			if !hasNext || err != nil {
+				break
+			}
 			seps := rs.GetRowData()
 			t, _ := time.Parse("2006-01-02", seps[0])
 			store.WriteRecord(testCode, t, strings.Join(seps, ","))

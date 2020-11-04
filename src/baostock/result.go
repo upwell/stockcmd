@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"hehan.net/my/stockcmd/logger"
 )
 
@@ -19,12 +21,12 @@ type ResultSet struct {
 	BS           *BaoStock
 }
 
-func (rs *ResultSet) Next() bool {
+func (rs *ResultSet) Next() (bool, error) {
 	if len(rs.Data) == 0 {
-		return false
+		return false, nil
 	}
 	if rs.CurRowNum < len(rs.Data) {
-		return true
+		return true, nil
 	}
 
 	// request for next page
@@ -33,12 +35,10 @@ func (rs *ResultSet) Next() bool {
 	msgBody := strings.Join(rs.ReqBodyParts, MessageSplit)
 	rspMsg, err := rs.BS.request(rs.MsgType, msgBody)
 	if err != nil {
-		logger.SugarLog.Warnf("failed to get data with error [%v]", err)
-		return false
+		return false, errors.Wrap(err, "failed to get data with error")
 	}
 	if len(rspMsg.BodyAttrs) < 7 {
-		logger.SugarLog.Warnf("wrong number of body attrs of response message: [%s]", rspMsg.BodyAttrs)
-		return false
+		return false, errors.Errorf("wrong number of body attrs of response message: [%s]", rspMsg.BodyAttrs)
 	}
 
 	rs.CurPageNum, _ = strconv.Atoi(rspMsg.BodyAttrs[4])
@@ -46,9 +46,9 @@ func (rs *ResultSet) Next() bool {
 	rs.setData(rspMsg.BodyAttrs[6])
 
 	if len(rs.Data) == 0 {
-		return false
+		return false, nil
 	}
-	return true
+	return true, nil
 }
 
 func (rs *ResultSet) GetRowData() []string {
