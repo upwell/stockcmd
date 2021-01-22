@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"hehan.net/my/stockcmd/logger"
+
 	"hehan.net/my/stockcmd/hq"
 
 	"hehan.net/my/stockcmd/sina"
@@ -22,6 +24,7 @@ func GetName(code string, force bool) string {
 		basic = GetBasic(code)
 	}
 	if basic == nil {
+		logger.SugarLog.Infof("no basic info for [%s], fetch now", code)
 		sinaCode := hq.ConvertCode(code)
 		ret := sina.Suggest(sinaCode)
 		if len(ret) == 0 {
@@ -111,4 +114,12 @@ func GetBasics() []*StockBasic {
 		return nil
 	})
 	return ret
+}
+
+func RecreateBasicBucket() {
+	DB.Update(func(tx *bbolt.Tx) error {
+		tx.DeleteBucket([]byte(BasicBucketName))
+		tx.CreateBucket([]byte(BasicBucketName))
+		return nil
+	})
 }

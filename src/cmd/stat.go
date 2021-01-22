@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"hehan.net/my/stockcmd/tencent"
+
 	mapset "github.com/deckarep/golang-set"
 	"github.com/olekukonko/tablewriter"
-
-	"hehan.net/my/stockcmd/tencent"
 
 	"github.com/jinzhu/now"
 	"github.com/spf13/cobra"
@@ -163,7 +163,7 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 	hqs := make([]*store.StockHQ, 0, 512)
 	for _, code := range codes {
 		wg.Add(1)
-		api := tencent.TencentHQApi{}
+		api := tencent.HQApi{}
 		go func(code string) {
 			defer wg.Done()
 			v, err := api.GetHQ(code)

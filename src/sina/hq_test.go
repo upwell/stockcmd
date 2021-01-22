@@ -11,7 +11,7 @@ func TestGetLivePrice(t *testing.T) {
 	//code := "sz.300284"
 	code := "sh.000911"
 	//code := "sh.000009"
-	api := SinaHQApi{}
+	api := HQApi{}
 	ret, err := api.GetHQ(code)
 	if err != nil {
 		t.Errorf("failed with [%v]", err)

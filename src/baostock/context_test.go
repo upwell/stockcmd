@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"hehan.net/my/stockcmd/util"
+
 	"hehan.net/my/stockcmd/store"
 
 	"github.com/jinzhu/now"
@@ -47,7 +49,7 @@ func TestBaoStock_QueryAll(t *testing.T) {
 	baostock.BS.Login()
 	defer baostock.BS.Logout()
 
-	rs, err := baostock.BS.QueryAllStock(time.Time{})
+	rs, err := baostock.BS.QueryAllStock(util.GetLastWorkDay())
 	if err != nil {
 		t.Errorf("query failed with [%v]", err)
 	}

@@ -185,7 +185,7 @@ func (bs *BaoStock) QueryAllStock(day time.Time) (*ResultSet, error) {
 	}
 
 	rs := &ResultSet{
-		MsgType:      MessageTypeGetKDataRequest,
+		MsgType:      MessageTypeQueryAllStockRequest,
 		ReqBodyParts: parts,
 		Fields:       []string{},
 		BS:           bs,

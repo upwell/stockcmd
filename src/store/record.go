@@ -69,6 +69,9 @@ func WriteRecords(records []*Record) {
 }
 
 func GetLastTime(code string) time.Time {
+
+	//defer util.MeasureTime("GetLastTime")()
+
 	var t time.Time
 	DB.View(func(tx *bbolt.Tx) error {
 		c := tx.Bucket([]byte(DailyBucketName)).Cursor()
@@ -86,6 +89,8 @@ func GetLastTime(code string) time.Time {
 }
 
 func GetRecords(code string, start time.Time, end time.Time) (*dataframe.DataFrame, error) {
+	//defer util.MeasureTime(code + "GetRecords")()
+
 	df := &dataframe.DataFrame{}
 	if start.After(end) {
 		return df, nil
@@ -94,6 +99,8 @@ func GetRecords(code string, start time.Time, end time.Time) (*dataframe.DataFra
 	var dbErr error
 
 	DB.View(func(tx *bbolt.Tx) error {
+		//defer util.MeasureTime(code + "GetRecords in seek")()
+
 		FieldsStr := "date,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ"
 		c := tx.Bucket([]byte(DailyBucketName)).Cursor()
 		startKey := []byte(genKey(code, start))

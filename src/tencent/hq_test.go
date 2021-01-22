@@ -6,7 +6,7 @@ import (
 )
 
 func TestTencentHQApi_GetHQ(t *testing.T) {
-	api := TencentHQApi{}
+	api := HQApi{}
 	ret, err := api.GetHQ("sh.000939")
 	if err != nil {
 		t.Error(err)

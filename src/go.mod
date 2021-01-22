@@ -36,3 +36,4 @@ require (
 )
 
 replace github.com/olekukonko/tablewriter => ./mydeps/tablewriter
+replace github.com/silenceper/pool => ./mydeps/pool

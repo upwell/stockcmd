@@ -3,6 +3,9 @@ package cmd
 import (
 	"fmt"
 
+	"hehan.net/my/stockcmd/baostock"
+	"hehan.net/my/stockcmd/util"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"hehan.net/my/stockcmd/stat"
@@ -47,6 +50,28 @@ var RemoveGroupKDataCmd = &cobra.Command{
 	RunE:    removeGroupKDataCmdF,
 }
 
+var UpdateBasicData = &cobra.Command{
+	Use:   "update_basic_data",
+	Short: "update_basic_data",
+	RunE:  updateBasicDataCmdF,
+}
+
+func updateBasicDataCmdF(cmd *cobra.Command, args []string) error {
+	store.RecreateBasicBucket()
+
+	baostock.BS.Login()
+	defer baostock.BS.Logout()
+
+	rs, err := baostock.BS.QueryAllStock(util.GetLastWorkDay())
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	store.WriteBasics(rs.Data)
+	return nil
+}
+
 func removeKDataCmdF(cmd *cobra.Command, args []string) error {
 	code := args[0]
 	store.DeleteCodeRecords(code)
@@ -85,6 +110,6 @@ func removeGroupKDataCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	DevCmd.AddCommand(RemoveKDataCmd, RemoveGroupKDataCmd, RemoveAllKData, ShowKDataCmd)
+	DevCmd.AddCommand(RemoveKDataCmd, RemoveGroupKDataCmd, RemoveAllKData, ShowKDataCmd, UpdateBasicData)
 	rootCmd.AddCommand(DevCmd)
 }

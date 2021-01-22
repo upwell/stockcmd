@@ -24,23 +24,43 @@ var ShowCmd = &cobra.Command{
 	RunE:    showCmdF,
 }
 
+var showPeriodVar int
+
 func showCmdF(cmd *cobra.Command, args []string) error {
+	//t1 := time.Now()
+
 	gName := args[0]
 	g := store.GetGroup(gName)
+	codes := make([]string, 0, 32)
 	if g == nil {
-		return errors.Errorf("Group [%s] not exist", gName)
+		if gName == "all" {
+			codeSet := store.GetAllStockCodes()
+			for code := range codeSet.Iter() {
+				codes = append(codes, code.(string))
+			}
+		} else {
+			return errors.Errorf("Group [%s] not exist", gName)
+		}
+	} else {
+		for code, _ := range g.Codes {
+			codes = append(codes, code)
+		}
 	}
+
+	//startDBStat := store.DB.Stats()
+	//fmt.Printf("[%s] since t1\n", time.Since(t1))
+	//t2 := time.Now()
 
 	retries := 0
 	rets := make([]*stat.DailyStat, 0, 32)
 	for retries < 3 {
 		var wg sync.WaitGroup
 		var statErr error
-		for code, _ := range g.Codes {
+		for _, code := range codes {
 			wg.Add(1)
 			go func(code string) {
 				defer wg.Done()
-				ds, err := stat.GetDailyState(code)
+				ds, err := stat.GetDailyState(code, showPeriodVar)
 				if err == nil {
 					rets = append(rets, ds)
 				} else {
@@ -62,6 +82,9 @@ func showCmdF(cmd *cobra.Command, args []string) error {
 			break
 		}
 	}
+
+	//fmt.Printf("[%s] since t2\n", time.Since(t2))
+	//t3 := time.Now()
 
 	sort.Slice(rets, func(i, j int) bool {
 		return rets[i].ChgToday > rets[j].ChgToday
@@ -89,9 +112,16 @@ func showCmdF(cmd *cobra.Command, args []string) error {
 	}
 	table.Render()
 
+	//fmt.Printf("[%s] since t3\n", time.Since(t3))
+
+	//endDBStat := store.DB.Stats()
+	//diffDBStat := endDBStat.Sub(&startDBStat)
+	//json.NewEncoder(os.Stderr).Encode(diffDBStat)
+
 	return nil
 }
 
 func init() {
+	ShowCmd.Flags().IntVarP(&showPeriodVar, "period", "p", 30, "get the <period> days of stat")
 	rootCmd.AddCommand(ShowCmd)
 }

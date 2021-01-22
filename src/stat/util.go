@@ -19,25 +19,25 @@ func Float64String(f float64) string {
 	return fmt.Sprintf("%.2f", f)
 }
 
-func ChgString(chg float64) string {
+func ChgString(chg float64, fallRate float64, riseRate float64) string {
 	chgStr := Float64String(chg)
 	post := ""
 	switch {
-	case chg > 3:
+	case chg > riseRate:
 		post = "✨"
 	case chg > 0:
 		post = "↑"
 	case chg == 0:
 		post = "⁃"
-	case chg < -3:
+	case chg < fallRate:
 		post = "⚡"
 	case chg < 0:
 		post = "↓"
 	}
 	chgStr = fmt.Sprintf("%s %s", chgStr, post)
-	if chg >= 3.0 {
+	if chg >= riseRate {
 		chgStr = color.RedString(chgStr)
-	} else if chg <= -3.0 {
+	} else if chg <= fallRate {
 		chgStr = color.GreenString(chgStr)
 	}
 	return chgStr

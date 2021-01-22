@@ -18,7 +18,7 @@ func TestFields(t *testing.T) {
 
 func TestGetDailyState(t *testing.T) {
 	code := "sz.002475"
-	ds, err := GetDailyState(code)
+	ds, err := GetDailyState(code, 30)
 	if err != nil {
 		t.Errorf("get daily state error [%v]", err)
 		return

@@ -11,10 +11,12 @@ import (
 
 const hqURL = "http://qt.gtimg.cn/q="
 
-type TencentHQApi struct {
+type HQApi struct {
 }
 
-func (api TencentHQApi) GetHQ(code string) (hq.HQ, error) {
+func (api HQApi) GetHQ(code string) (hq.HQ, error) {
+	//defer util.MeasureTime("GetHQ")()
+
 	code = hq.ConvertCode(code)
 	ret := hq.HQ{}
 	resp, err := grequests.Get(hqURL+code, nil)

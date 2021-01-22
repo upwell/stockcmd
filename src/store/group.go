@@ -3,6 +3,8 @@ package store
 import (
 	"encoding/json"
 
+	mapset "github.com/deckarep/golang-set"
+
 	"go.etcd.io/bbolt"
 )
 
@@ -93,4 +95,19 @@ func (g *Group) Save() {
 		b.Put([]byte(g.Name), groupBytes)
 		return nil
 	})
+}
+
+func GetAllStockCodes() mapset.Set {
+	groupNames := ListGroup()
+	codeSet := mapset.NewSet()
+	for _, name := range groupNames {
+		group := GetGroup(name)
+		for code, _ := range group.Codes {
+			if !codeSet.Contains(code) {
+				codeSet.Add(code)
+			}
+		}
+	}
+
+	return codeSet
 }

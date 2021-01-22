@@ -12,14 +12,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-type SinaHQApi struct {
+type HQApi struct {
 }
 
 func GetLivePrices(codes []string) map[string]hq.HQ {
 	var wg sync.WaitGroup
 	ret := make(map[string]hq.HQ)
 
-	api := SinaHQApi{}
+	api := HQApi{}
 	for _, code := range codes {
 		wg.Add(1)
 		go func(code string) {
@@ -35,7 +35,7 @@ func GetLivePrices(codes []string) map[string]hq.HQ {
 }
 
 // GetLivePrice code format should be: sh.000001
-func (api SinaHQApi) GetHQ(code string) (hq.HQ, error) {
+func (api HQApi) GetHQ(code string) (hq.HQ, error) {
 	code = hq.ConvertCode(code)
 	ret := hq.HQ{}
 	resp, err := grequests.Get(HqURL+code, nil)

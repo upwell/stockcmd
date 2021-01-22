@@ -13,7 +13,7 @@ import (
 
 func TestWriteHQ(t *testing.T) {
 	code := "sh.000961"
-	api := sina.SinaHQApi{}
+	api := sina.HQApi{}
 	hq, _ := api.GetHQ(code)
 
 	WriteHQ(&StockHQ{
@@ -33,7 +33,7 @@ func TestBulkWriteHQ(t *testing.T) {
 	hqs := make([]*StockHQ, 0, 512)
 	for _, code := range codes {
 		wg.Add(1)
-		api := tencent.TencentHQApi{}
+		api := tencent.HQApi{}
 		go func(code string) {
 			defer wg.Done()
 			v, err := api.GetHQ(code)

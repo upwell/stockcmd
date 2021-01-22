@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"hehan.net/my/stockcmd/tencent"
+
 	"hehan.net/my/stockcmd/util"
 
 	"gonum.org/v1/gonum/floats"
@@ -21,7 +23,6 @@ import (
 	"github.com/jinzhu/now"
 	"github.com/pkg/errors"
 	"hehan.net/my/stockcmd/baostock"
-	"hehan.net/my/stockcmd/sina"
 	"hehan.net/my/stockcmd/store"
 )
 
@@ -75,14 +76,14 @@ func (ds *DailyStat) Row() []string {
 	}
 	row = append(row, nameStr)
 	row = append(row, Float64String(ds.Now))
-	row = append(row, ChgString(ds.ChgToday))
+	row = append(row, ChgString(ds.ChgToday, -3, 3))
 	row = append(row, Float64String(ds.Last))
-	row = append(row, ChgString(ds.ChgLast))
+	row = append(row, ChgString(ds.ChgLast, -3, 3))
 	row = append(row, Float64String(ds.PE))
 	row = append(row, Float64String(ds.ChgMonth))
 	row = append(row, Float64String(ds.ChgLastMonth))
 	row = append(row, Float64String(ds.ChgYear))
-	row = append(row, Float64String(ds.ChgMax))
+	row = append(row, ChgString(ds.ChgMax, -6, 5))
 	row = append(row, Float64String(ds.ChgMin))
 	row = append(row, Float64String(ds.Chg5))
 	row = append(row, Float64String(ds.Chg10))
@@ -282,14 +283,14 @@ func GetDataFrame(code string) (*dataframe.DataFrame, error) {
 	return df, nil
 }
 
-func GetDailyState(code string) (*DailyStat, error) {
+func GetDailyState(code string, period int) (*DailyStat, error) {
 	df, err := GetDataFrame(code)
 	if err != nil {
 		return nil, err
 	}
 
-	name := store.GetName(code, true)
-	api := sina.SinaHQApi{}
+	name := store.GetName(code, false)
+	api := tencent.HQApi{}
 	hq, err := api.GetHQ(code)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get hq from sina")
@@ -311,7 +312,7 @@ func GetDailyState(code string) (*DailyStat, error) {
 		pe = lastRecord["peTTM"].(float64)
 		pb = lastRecord["pbMRQ"].(float64)
 	}
-	max, min := GetMaxMin(df, 30)
+	max, min := GetMaxMin(df, period)
 	ds := &DailyStat{
 		Name:         name,
 		ChgToday:     hq.ChgToday,
