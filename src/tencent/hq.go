@@ -32,6 +32,7 @@ func (api HQApi) GetHQ(code string) (hq.HQ, error) {
 	if err != nil {
 		return ret, errors.Wrapf(err, "convert GBK2UTF8 failed")
 	}
+	//println(rawResult)
 	rawResult = strings.Split(rawResult, "=")[1]
 	rawResult = strings.ReplaceAll(rawResult, "\"", "")
 	parts := strings.Split(rawResult, "~")
@@ -41,10 +42,12 @@ func (api HQApi) GetHQ(code string) (hq.HQ, error) {
 	now, err := strconv.ParseFloat(parts[3], 64)
 	last, err := strconv.ParseFloat(parts[4], 64)
 	chgToday, err := strconv.ParseFloat(parts[32], 64)
+	marketCap, err := strconv.ParseFloat(parts[45], 64)
 
 	ret.Now = now
 	ret.ChgToday = chgToday
 	ret.Last = last
 	ret.IsSuspend = false
+	ret.MarketCap = marketCap
 	return ret, nil
 }

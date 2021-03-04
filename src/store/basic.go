@@ -13,6 +13,12 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+var fixedStockBasic = map[string]string{
+	"sh.000001": "上证指数",
+	"sz.399006": "创业板指",
+	"sz.399001": "深证指数",
+}
+
 type StockBasic struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
@@ -71,11 +77,20 @@ func WriteBasic(code string, basic *StockBasic) {
 func WriteBasics(arrs [][]string) {
 	DB.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(BasicBucketName))
+		var basic *StockBasic
 		for _, arr := range arrs {
-			basic := &StockBasic{
-				Code: arr[0],
-				Name: arr[2],
+			if name, ok := fixedStockBasic[arr[0]]; ok {
+				basic = &StockBasic{
+					Code: arr[0],
+					Name: name,
+				}
+			} else {
+				basic = &StockBasic{
+					Code: arr[0],
+					Name: arr[2],
+				}
 			}
+
 			if arr[1] == "0" {
 				fmt.Printf("%s %s\n", arr[0], arr[2])
 			}
