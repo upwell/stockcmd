@@ -49,7 +49,6 @@ func TestAllGetDataFrame(t *testing.T) {
 		wg.Add(1)
 		go func(code string) {
 			defer wg.Done()
-			fmt.Println(code)
 			_, err := GetDataFrame(code)
 			if err != nil {
 				t.Errorf("get data frame error [%v]", err)

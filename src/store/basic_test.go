@@ -8,7 +8,7 @@ import (
 )
 
 func TestWriteBasic(t *testing.T) {
-	code := "sz002475"
+	code := "sz.002475"
 	basic := &StockBasic{
 		Code: code,
 		Name: "立讯精密",
@@ -17,7 +17,7 @@ func TestWriteBasic(t *testing.T) {
 }
 
 func TestGetBasic(t *testing.T) {
-	code := "sz002475"
+	code := "sz.002475"
 	basic := &StockBasic{
 		Code: code,
 		Name: "立讯精密",
@@ -32,7 +32,7 @@ func TestGetBasic(t *testing.T) {
 }
 
 func TestGetName(t *testing.T) {
-	code := "sz002049"
+	code := "sz.002049"
 	name := GetName(code, true)
 	assert.Equal(t, name, "紫光国微")
 }

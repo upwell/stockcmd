@@ -189,19 +189,34 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 	store.BulkWriteHQ(hqs)
 	fmt.Printf("fetch hq data done, take [%s], start fetch history records ... \n", time.Since(start))
 
+	// use channel to control the number of concurrent fetch tasks
+	fetchCh := make(chan string, 30)
+	go func() {
+		for {
+			code, ok := <-fetchCh
+			if !ok {
+				break
+			}
+
+			go func(code string) {
+				_, err := stat.GetDataFrame(code)
+				if err != nil {
+					logger.SugarLog.Error(err)
+					fetchCh <- code
+				} else {
+					wg.Done()
+				}
+			}(code)
+		}
+	}()
+
 	for _, code := range codes {
 		wg.Add(1)
-		go func(code string) {
-			defer wg.Done()
-			_, err := stat.GetDataFrame(code)
-			if err != nil {
-				logger.SugarLog.Error(err)
-				return
-			}
-		}(code)
+		fetchCh <- code
 	}
-	wg.Wait()
 
+	wg.Wait()
+	close(fetchCh)
 	return nil
 }
 
