@@ -21,6 +21,8 @@ const MessageTypeLogoutResponse = "03"
 const MessageTypeException = "04"
 const MessageTypeGetKDataRequest = "11"
 const MessageTypeGetKDataResponse = "12"
+const MessageTypeQueryDividendDataRequest = "13"
+const MessageTypeQueryDividendDataResponse = "14"
 const MessageTypeQueryAllStockRequest = "35"
 const MessageTypeQueryAllStockResponse = "36"
 

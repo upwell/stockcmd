@@ -173,6 +173,7 @@ func (c *channelPool) Get() (interface{}, error) {
 					return nil, ErrMaxActiveConnReached
 				}
 				if ret.idleConn.conn == nil {
+					//if ret.idleConn == nil || ret.idleConn.conn == nil {
 					return nil, errors.New("failed to create a new connection")
 				}
 				if timeout := c.idleTimeout; timeout > 0 {
@@ -206,6 +207,10 @@ func (c *channelPool) Get() (interface{}, error) {
 
 // Put 将连接放回pool中
 func (c *channelPool) Put(conn interface{}) error {
+	if conn == nil {
+		println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+		return nil
+	}
 	c.mu.Lock()
 	if c.conns == nil && conn != nil {
 		c.mu.Unlock()

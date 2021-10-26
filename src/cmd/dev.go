@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"hehan.net/my/stockcmd/task"
+
 	"hehan.net/my/stockcmd/baostock"
 	"hehan.net/my/stockcmd/util"
 
@@ -11,6 +13,8 @@ import (
 	"hehan.net/my/stockcmd/stat"
 	"hehan.net/my/stockcmd/store"
 )
+
+var ForceCheck bool
 
 var DevCmd = &cobra.Command{
 	Use:   "dev",
@@ -48,6 +52,13 @@ var RemoveGroupKDataCmd = &cobra.Command{
 	Example: ` remove_group_kdata hold`,
 	Args:    cobra.MinimumNArgs(1),
 	RunE:    removeGroupKDataCmdF,
+}
+
+var CheckDividendCmd = &cobra.Command{
+	Use:   "check_dividend",
+	Short: "check dividend day",
+	Long:  "check dividend day of all stocks in store and delete the obsolete data",
+	RunE:  checkDividendCmdF,
 }
 
 var UpdateBasicData = &cobra.Command{
@@ -109,7 +120,16 @@ func removeGroupKDataCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func checkDividendCmdF(cmd *cobra.Command, args []string) error {
+	task.CheckAllStockDividendDay(ForceCheck)
+	return nil
+}
+
 func init() {
-	DevCmd.AddCommand(RemoveKDataCmd, RemoveGroupKDataCmd, RemoveAllKData, ShowKDataCmd, UpdateBasicData)
+	// option to force check dividend
+	CheckDividendCmd.Flags().BoolVarP(&ForceCheck, "force", "f", false, "force check")
+
+	DevCmd.AddCommand(RemoveKDataCmd, RemoveGroupKDataCmd, RemoveAllKData,
+		ShowKDataCmd, UpdateBasicData, CheckDividendCmd)
 	rootCmd.AddCommand(DevCmd)
 }

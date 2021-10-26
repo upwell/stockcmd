@@ -66,7 +66,84 @@ func TestBaoStock_GetDailyKData(t *testing.T) {
 
 	rs, _ := baostock.BS.GetDailyKData("sz.002475", fromDate, toDate)
 	fmt.Println(rs.RespMsg.BodyAttrs)
+}
 
+func TestBaoStock_QueryDividendData(t *testing.T) {
+	baostock.BS.Login()
+	defer baostock.BS.Logout()
+
+	rs, _ := baostock.BS.QueryDividendData("sz.002475", "2021")
+	rows := make([]string, 0, 20)
+	for {
+		hasNext, err := rs.Next()
+		if !hasNext || err != nil {
+			break
+		}
+		rows = append(rows, strings.Join(rs.GetRowData(), ","))
+	}
+
+	for _, row := range rows {
+		println(row)
+	}
+}
+
+func TestBaoStock_GetLastDividendDay(t *testing.T) {
+	baostock.BS.Login()
+	defer baostock.BS.Logout()
+
+	start := time.Now()
+	day, err := baostock.BS.GetLastDividendDay("sz.002475")
+	if err != nil {
+		println(err)
+		return
+	}
+
+	println(day.String())
+	println(time.Since(start).String())
+}
+
+func TestBaoStock_AllGetLastDividendDay(t *testing.T) {
+	baostock.BS.Login()
+	defer baostock.BS.Logout()
+
+	start := time.Now()
+
+	codeSet := store.GetAllStockCodes()
+	for code := range codeSet.Iter() {
+		d, _ := baostock.BS.GetLastDividendDay(code.(string))
+		println(d.String())
+	}
+
+	println(time.Since(start).String())
+}
+
+func TestBaoStock_AllGetLastDividendDayWithPool(t *testing.T) {
+	start := time.Now()
+	codeSet := store.GetAllStockCodes()
+	var wg sync.WaitGroup
+	for code := range codeSet.Iter() {
+		wg.Add(1)
+		go func(c string) {
+			defer wg.Done()
+			v, err := baostock.BSPool.Get()
+			if err != nil {
+				fmt.Printf("failed to obtain baostock instance [%v]\n", err)
+				return
+			}
+			bs := v.(*baostock.BaoStock)
+			d, err := bs.GetLastDividendDay(c)
+			if err != nil {
+				fmt.Printf("something is wrong [%v]\n", err)
+				baostock.BSPool.Close(v)
+				return
+			}
+			baostock.BSPool.Put(v)
+			println(d.String())
+		}(code.(string))
+	}
+
+	wg.Wait()
+	println(time.Since(start).String())
 }
 
 func TestBaoStock_QueryHistoryKDataPage(t *testing.T) {

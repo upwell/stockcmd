@@ -13,6 +13,7 @@ var DB *bolt.DB
 
 const DailyBucketName = "Daily"
 const BasicBucketName = "Basic"
+const ConfigBucketName = "ConfigRunning"
 const GroupBucketName = "Group"
 const HQBucketName = "HQ"
 
@@ -39,6 +40,11 @@ func init() {
 		}
 
 		_, err = tx.CreateBucketIfNotExists([]byte(BasicBucketName))
+		if err != nil {
+			logger.SugarLog.Fatalf("failed to get/create db bucket [%v]", err)
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte(ConfigBucketName))
 		if err != nil {
 			logger.SugarLog.Fatalf("failed to get/create db bucket [%v]", err)
 		}

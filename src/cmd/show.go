@@ -5,6 +5,8 @@ import (
 	"sort"
 	"sync"
 
+	"hehan.net/my/stockcmd/task"
+
 	"hehan.net/my/stockcmd/logger"
 
 	"github.com/olekukonko/tablewriter"
@@ -46,6 +48,8 @@ func showCmdF(cmd *cobra.Command, args []string) error {
 			codes = append(codes, code)
 		}
 	}
+
+	task.CheckAllStockDividendDay(false)
 
 	//startDBStat := store.DB.Stats()
 	//fmt.Printf("[%s] since t1\n", time.Since(t1))

@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jinzhu/now"
+
 	"hehan.net/my/stockcmd/config"
 	"hehan.net/my/stockcmd/logger"
 	"hehan.net/my/stockcmd/util"
@@ -257,4 +259,86 @@ func (bs *BaoStock) GetDailyKData(code string, startDay time.Time, endDay time.T
 	return bs.QueryHistoryKDataPage(1, 200, code,
 		"date,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ", startDay, endDay, "d",
 		"2")
+}
+
+// QueryDividendData 查询除权除息信息
+func (bs *BaoStock) QueryDividendData(code string, year string) (*ResultSet, error) {
+	if len(code) != StockCodeLength {
+		return nil, errors.New("invalid code, the format should be: sh.6000000")
+	}
+	code = strings.ToLower(code)
+
+	parts := []string{
+		"query_dividend_data", bs.UserID, "1", "10000", code, year, "operate",
+	}
+	msgBody := strings.Join(parts, MessageSplit)
+	rs := &ResultSet{
+		MsgType:      MessageTypeQueryDividendDataRequest,
+		ReqBodyParts: parts,
+		Fields:       []string{},
+		BS:           bs,
+	}
+
+	respMsg, err := bs.request(MessageTypeQueryDividendDataRequest, msgBody)
+	if err != nil {
+		return nil, errors.Wrap(err, "get dividend data failed")
+	}
+	if !respMsg.IsSucceed() {
+		return nil, errors.Errorf("error code [%s], error message [%s]", respMsg.ErrCode, respMsg.ErrMsg)
+	}
+
+	if len(respMsg.BodyAttrs) < 7 {
+		return nil, errors.Errorf("invalid body attrs [%s]", respMsg.BodyAttrs)
+	}
+	rs.CurRowNum, _ = strconv.Atoi(respMsg.BodyAttrs[4])
+	rs.RespMsg = respMsg
+	rs.setData(respMsg.BodyAttrs[6])
+
+	return rs, nil
+}
+
+func (bs *BaoStock) GetLastDividendDay(code string) (time.Time, error) {
+	nowTime := time.Now()
+	year := nowTime.Year()
+
+	ret, err := bs.GetLastDividendDayByYear(code, year)
+	if err != nil {
+		return ret, err
+	}
+	if ret.IsZero() {
+		// check last year
+		ret, err = bs.GetLastDividendDayByYear(code, year-1)
+	}
+	return ret, err
+}
+
+func (bs *BaoStock) GetLastDividendDayByYear(code string, year int) (time.Time, error) {
+	yearStr := strconv.Itoa(year)
+	rs, err := bs.QueryDividendData(code, yearStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	var fields []string
+	for {
+		hasNext, err := rs.Next()
+		if !hasNext || err != nil {
+			break
+		}
+		fields = rs.GetRowData()
+		break
+	}
+
+	if fields == nil {
+		return time.Time{}, nil
+	}
+	if len(fields) < 7 {
+		return time.Time{}, errors.New("fields are not enough to parse operate day")
+	}
+
+	ret, err := now.Parse(fields[6])
+	if err != nil {
+		return time.Time{}, errors.Errorf("wrong date string format: [%s]", fields[6])
+	}
+	return ret, nil
 }

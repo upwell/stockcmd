@@ -34,7 +34,7 @@
 ```bash
 > stockcmd group add hold lx
 ```
-会有个提示列表出来，上下键选择，按回车确认加入，`ctrl+c`取消；
+会有个提示列表出来，上下键选择，按`回车`确认加入，`ctrl+c`取消；
 
 ![image](https://github.com/upwell/stockcmd/blob/master/images/sc2.png)
 
@@ -44,7 +44,7 @@
 ```bash
 > stockcmd show hold
 ```
-加入后第一次显示会需要一点时间去抓取历史数据，之后就会很快了。
+加入后第一次显示会需要一点时间去抓取历史数据，之后就很快了。
 
 - 快捷命令显示分组
 有个快捷的script可以显示分组，需要把scripts/sc拷贝到`/usr/local/bin/`下面
@@ -59,7 +59,7 @@ or
 ```bash
 > stockcmd group remove hold
 ```
-上下选择后，按回车确认加入，`ctrl+c`取消；
+上下键选择后，按`回车`确认删除，`ctrl+c`取消；
 
 
 [1]: http://baostock.com
