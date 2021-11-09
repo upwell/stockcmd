@@ -126,6 +126,6 @@ func showCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	ShowCmd.Flags().IntVarP(&showPeriodVar, "period", "p", 30, "get the <period> days of stat")
+	ShowCmd.Flags().IntVarP(&showPeriodVar, "period", "p", 120, "get the <period> days of stat")
 	rootCmd.AddCommand(ShowCmd)
 }

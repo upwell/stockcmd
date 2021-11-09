@@ -208,9 +208,9 @@ func (c *channelPool) Get() (interface{}, error) {
 // Put 将连接放回pool中
 func (c *channelPool) Put(conn interface{}) error {
 	if conn == nil {
-		println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
 		return nil
 	}
+
 	c.mu.Lock()
 	if c.conns == nil && conn != nil {
 		c.mu.Unlock()
