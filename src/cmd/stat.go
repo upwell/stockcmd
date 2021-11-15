@@ -50,6 +50,8 @@ type StatChg struct {
 
 var periodVar int
 var includeST bool
+var groupVar string
+var sortByIncrease bool
 
 func getStatChgs(basics []*store.StockBasic) []*StatChg {
 	chgs := make([]*StatChg, 0, 512)
@@ -100,9 +102,15 @@ func getStatChgs(basics []*store.StockBasic) []*StatChg {
 	}
 	wg.Wait()
 
-	sort.SliceStable(chgs, func(i, j int) bool {
-		return chgs[i].MaxChg < chgs[j].MaxChg
-	})
+	if sortByIncrease {
+		sort.SliceStable(chgs, func(i, j int) bool {
+			return chgs[i].MinChg > chgs[j].MinChg
+		})
+	} else {
+		sort.SliceStable(chgs, func(i, j int) bool {
+			return chgs[i].MaxChg < chgs[j].MaxChg
+		})
+	}
 	return chgs
 }
 
@@ -118,6 +126,10 @@ func myStatCmdF(cmd *cobra.Command, args []string) error {
 	basics := make([]*store.StockBasic, 0, 32)
 	codeSet := mapset.NewSet()
 	for _, name := range groupNames {
+		if groupVar != "" && name != groupVar {
+			continue
+		}
+
 		group := store.GetGroup(name)
 		for code, name := range group.Codes {
 			if !codeSet.Contains(code) {
@@ -127,6 +139,10 @@ func myStatCmdF(cmd *cobra.Command, args []string) error {
 				})
 				codeSet.Add(code)
 			}
+		}
+
+		if groupVar == name {
+			break
 		}
 	}
 
@@ -223,9 +239,12 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 func init() {
 	StatCmd.Flags().IntVarP(&periodVar, "period", "p", 30, "get the <period> days of stat")
 	StatCmd.Flags().BoolVarP(&includeST, "includeST", "t", false, "exclude the st from results")
+	StatCmd.Flags().BoolVarP(&sortByIncrease, "sortByIncrease", "r", false, "sort by the increase rate with descending sort")
 
 	MyStatCmd.Flags().IntVarP(&periodVar, "period", "p", 30, "get the <period> days of stat")
 	MyStatCmd.Flags().BoolVarP(&includeST, "includeST", "t", false, "exclude the st from results")
+	MyStatCmd.Flags().StringVarP(&groupVar, "group", "g", "", "show stat of specified group")
+	MyStatCmd.Flags().BoolVarP(&sortByIncrease, "sortByIncrease", "r", false, "sort by the increase rate with descending sort")
 
 	rootCmd.AddCommand(StatCmd)
 	rootCmd.AddCommand(MyStatCmd)
