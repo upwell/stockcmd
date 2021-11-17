@@ -4,17 +4,16 @@ import (
 	"os"
 	"sort"
 	"sync"
-
-	"hehan.net/my/stockcmd/task"
-
-	"hehan.net/my/stockcmd/logger"
-
-	"github.com/olekukonko/tablewriter"
+	"time"
 
 	mapset "github.com/deckarep/golang-set"
+	"github.com/olekukonko/tablewriter"
+	"hehan.net/my/stockcmd/logger"
+	"hehan.net/my/stockcmd/stat"
+	"hehan.net/my/stockcmd/task"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"hehan.net/my/stockcmd/stat"
 	"hehan.net/my/stockcmd/store"
 )
 
@@ -27,34 +26,10 @@ var ShowCmd = &cobra.Command{
 }
 
 var showPeriodVar int
+var intervalVar int
 
-func showCmdF(cmd *cobra.Command, args []string) error {
-	//t1 := time.Now()
-
-	gName := args[0]
-	g := store.GetGroup(gName)
-	codes := make([]string, 0, 32)
-	if g == nil {
-		if gName == "all" {
-			codeSet := store.GetAllStockCodes()
-			for code := range codeSet.Iter() {
-				codes = append(codes, code.(string))
-			}
-		} else {
-			return errors.Errorf("Group [%s] not exist", gName)
-		}
-	} else {
-		for code, _ := range g.Codes {
-			codes = append(codes, code)
-		}
-	}
-
-	task.CheckAllStockDividendDay(false)
-
-	//startDBStat := store.DB.Stats()
-	//fmt.Printf("[%s] since t1\n", time.Since(t1))
-	//t2 := time.Now()
-
+// showOnce wrapper for show daily stat once
+func showOnce(codes []string) {
 	retries := 0
 	rets := make([]*stat.DailyStat, 0, 32)
 	for retries < 3 {
@@ -115,6 +90,47 @@ func showCmdF(cmd *cobra.Command, args []string) error {
 		table.Append(ds.Row())
 	}
 	table.Render()
+}
+
+func showCmdF(cmd *cobra.Command, args []string) error {
+	//t1 := time.Now()
+
+	gName := args[0]
+	g := store.GetGroup(gName)
+	codes := make([]string, 0, 32)
+	if g == nil {
+		if gName == "all" {
+			codeSet := store.GetAllStockCodes()
+			for code := range codeSet.Iter() {
+				codes = append(codes, code.(string))
+			}
+		} else {
+			return errors.Errorf("Group [%s] not exist", gName)
+		}
+	} else {
+		for code, _ := range g.Codes {
+			codes = append(codes, code)
+		}
+	}
+
+	task.CheckAllStockDividendDay(false)
+
+	if intervalVar > 0 {
+		timer := time.NewTicker(time.Duration(intervalVar) * time.Second)
+
+		for {
+			select {
+			case <-timer.C:
+				showOnce(codes)
+			}
+		}
+	} else {
+		showOnce(codes)
+	}
+
+	//startDBStat := store.DB.Stats()
+	//fmt.Printf("[%s] since t1\n", time.Since(t1))
+	//t2 := time.Now()
 
 	//fmt.Printf("[%s] since t3\n", time.Since(t3))
 
@@ -127,5 +143,7 @@ func showCmdF(cmd *cobra.Command, args []string) error {
 
 func init() {
 	ShowCmd.Flags().IntVarP(&showPeriodVar, "period", "p", 120, "get the <period> days of stat")
+	ShowCmd.Flags().IntVarP(&intervalVar, "interval", "i", 0, "when set to greater than 0,"+
+		" it will continue update the daily stat periodically by this `interval`")
 	rootCmd.AddCommand(ShowCmd)
 }
