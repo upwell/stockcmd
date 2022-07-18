@@ -15,6 +15,10 @@ func Round2(val float64) float64 {
 	return math.Round(val*100) / 100
 }
 
+func Round3(val float64) float64 {
+	return math.Round(val*1000) / 1000
+}
+
 func Float64String(f float64) string {
 	return fmt.Sprintf("%.2f", f)
 }

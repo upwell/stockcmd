@@ -9,6 +9,10 @@ func DateToStr(time time.Time) string {
 	return time.Format("2006-01-02")
 }
 
+func DateToStr2(time time.Time) string {
+	return time.Format("20060102")
+}
+
 func GetLastWorkDay() time.Time {
 	today := time.Now()
 

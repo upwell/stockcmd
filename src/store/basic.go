@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"hehan.net/my/stockcmd/logger"
 
@@ -89,6 +90,11 @@ func WriteBasics(arrs [][]string) {
 					Code: arr[0],
 					Name: arr[2],
 				}
+			}
+
+			// TODO ignore bj stock now
+			if strings.HasPrefix(basic.Code, "bj") {
+				continue
 			}
 
 			if arr[1] == "0" {

@@ -2,9 +2,14 @@ package stat
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
+
+	"hehan.net/my/stockcmd/eastmoney"
+
+	"hehan.net/my/stockcmd/akshare"
 
 	"hehan.net/my/stockcmd/tencent"
 
@@ -230,7 +235,7 @@ func GetDataFrame(code string) (*dataframe.DataFrame, error) {
 	startDay = now.With(startDay).BeginningOfDay()
 
 	if endDay.After(startDay) {
-		logger.SugarLog.Infof("get history data from baostock for [%s] between [%s] and [%s]", code,
+		logger.SugarLog.Infof("get history data for [%s] between [%s] and [%s]", code,
 			util.DateToStr(startDay), util.DateToStr(endDay))
 		v, err := baostock.BSPool.Get()
 		if err != nil {
@@ -274,6 +279,118 @@ func GetDataFrame(code string) (*dataframe.DataFrame, error) {
 		baostock.BSPool.Put(v)
 		store.WriteRecords(records)
 		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
+	}
+
+	df, err := store.GetRecords(code, endDay.AddDate(-1, 0, 0), endDay)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get records from db for [%s]", code)
+	}
+	return df, nil
+}
+
+func GetDataFrameAKShare(code string) (*dataframe.DataFrame, error) {
+	t := store.GetLastTime(code)
+	endDay := now.BeginningOfDay()
+	var startDay time.Time
+	if t.IsZero() {
+		logger.SugarLog.Infof("getting history data for %s, it would take some time ...", code)
+		startDay = endDay.AddDate(-1, 0, 0)
+	} else {
+		startDay = t.AddDate(0, 0, 1)
+
+		// skip weekend
+		switch startDay.Weekday() {
+		case time.Sunday:
+			startDay = startDay.AddDate(0, 0, 1)
+		case time.Saturday:
+			startDay = startDay.AddDate(0, 0, 2)
+		}
+	}
+	startDay = now.With(startDay).BeginningOfDay()
+
+	if endDay.After(startDay) {
+		logger.SugarLog.Infof("get history data for [%s] between [%s] and [%s]", code,
+			util.DateToStr(startDay), util.DateToStr(endDay))
+
+		t1 := time.Now()
+		dailyDataArray := akshare.AK.GetDailyKData(code, startDay, endDay)
+		records := make([]*store.Record, 0, 1024)
+
+		for _, kdata := range dailyDataArray {
+			//date,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ
+			val := fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f,%f,%f,0,0",
+				util.DateToStr(time.Time(kdata.Date)), kdata.Open, kdata.High, kdata.Low, kdata.Close, 0.0,
+				kdata.Volume, kdata.Amount, kdata.ChgRate)
+
+			record := &store.Record{
+				Code: code,
+				T:    time.Time(kdata.Date),
+				Val:  val,
+			}
+			records = append(records, record)
+		}
+
+		store.WriteRecords(records)
+		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
+	}
+
+	df, err := store.GetRecords(code, endDay.AddDate(-1, 0, 0), endDay)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get records from db for [%s]", code)
+	}
+	return df, nil
+}
+
+func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
+	t := store.GetLastTime(code)
+	endDay := now.BeginningOfDay()
+	var startDay time.Time
+	if t.IsZero() {
+		logger.SugarLog.Infof("getting history data for %s, it would take some time ...", code)
+		startDay = endDay.AddDate(-1, 0, 0)
+	} else {
+		startDay = t.AddDate(0, 0, 1)
+
+		// skip weekend
+		switch startDay.Weekday() {
+		case time.Sunday:
+			startDay = startDay.AddDate(0, 0, 1)
+		case time.Saturday:
+			startDay = startDay.AddDate(0, 0, 2)
+		}
+	}
+	startDay = now.With(startDay).BeginningOfDay()
+
+	if endDay.After(startDay) {
+		logger.SugarLog.Infof("get history data for [%s] between [%s] and [%s]", code,
+			util.DateToStr(startDay), util.DateToStr(endDay))
+
+		t1 := time.Now()
+		dailyDataArray, err := eastmoney.EM.GetDailyKData(code, startDay, endDay)
+		if err != nil {
+			logger.SugarLog.Errorf("failed to get daily kdata for [%s]", code)
+			return nil, errors.Wrapf(err, "failed to get daily kdata for [%s]", code)
+		}
+		records := make([]*store.Record, 0, 1024)
+		for _, kdata := range dailyDataArray {
+			//date,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ
+			val := fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s,%s,0,0",
+				kdata.Date, kdata.Open, kdata.High, kdata.Low, kdata.Close, kdata.PreClose,
+				kdata.Volume, kdata.Amount, kdata.ChgRate)
+
+			t, _ := now.Parse(kdata.Date)
+			record := &store.Record{
+				Code: code,
+				T:    t,
+				Val:  val,
+			}
+			records = append(records, record)
+		}
+
+		t2 := time.Now()
+		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
+		store.WriteRecords(records)
+		logger.SugarLog.Debugf("[%s] write records takes [%v]", code, time.Since(t2))
 	}
 
 	df, err := store.GetRecords(code, endDay.AddDate(-1, 0, 0), endDay)

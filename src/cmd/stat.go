@@ -27,6 +27,13 @@ var StatCmd = &cobra.Command{
 	RunE:    statCmdF,
 }
 
+var RPSCmd = &cobra.Command{
+	Use:     "rps",
+	Short:   "Show rps of stocks",
+	Example: "rps",
+	RunE:    rpsCmdF,
+}
+
 var MyStatCmd = &cobra.Command{
 	Use:     "mystat",
 	Short:   "Show stat of my stocks",
@@ -52,6 +59,9 @@ var periodVar int
 var includeST bool
 var groupVar string
 var sortByIncrease bool
+
+var daysVar int
+var showNumVar int
 
 func getStatChgs(basics []*store.StockBasic) []*StatChg {
 	chgs := make([]*StatChg, 0, 512)
@@ -121,6 +131,13 @@ func statCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func rpsCmdF(cmd *cobra.Command, args []string) error {
+	basics := store.GetBasics()
+	rpss := stat.GetRPS(basics, daysVar)
+	printTableRPS(rpss, showNumVar)
+	return nil
+}
+
 func myStatCmdF(cmd *cobra.Command, args []string) error {
 	groupNames := store.ListGroup()
 	basics := make([]*store.StockBasic, 0, 32)
@@ -170,6 +187,25 @@ func printTable(chgs []*StatChg) {
 	table.Render()
 }
 
+func printTableRPS(rpss []*stat.RPS, numVar int) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetRowLine(true)
+	table.SetAlignment(tablewriter.ALIGN_CENTER)
+	table.SetAutoWrapText(false)
+	table.SetAutoFormatHeaders(false)
+	table.SetReflowDuringAutoWrap(false)
+
+	table.SetHeader([]string{"Code", "Name", "RPS", "Chg"})
+
+	for idx, rps := range rpss {
+		if idx > numVar {
+			break
+		}
+		table.Append([]string{rps.Code, rps.Name, stat.Float64String(rps.Value), stat.Float64String(rps.Change)})
+	}
+	table.Render()
+}
+
 func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 	codes := store.GetCodes()
 
@@ -206,7 +242,7 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 	fmt.Printf("fetch hq data done, take [%s], start fetch history records ... \n", time.Since(start))
 
 	// use channel to control the number of concurrent fetch tasks
-	fetchCh := make(chan string, 30)
+	fetchCh := make(chan string, 64)
 	go func() {
 		for {
 			code, ok := <-fetchCh
@@ -215,7 +251,7 @@ func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 			}
 
 			go func(code string) {
-				_, err := stat.GetDataFrame(code)
+				_, err := stat.GetDataFrameEastMoney(code)
 				if err != nil {
 					logger.SugarLog.Error(err)
 					fetchCh <- code
@@ -246,7 +282,11 @@ func init() {
 	MyStatCmd.Flags().StringVarP(&groupVar, "group", "g", "", "show stat of specified group")
 	MyStatCmd.Flags().BoolVarP(&sortByIncrease, "sortByIncrease", "r", false, "sort by the increase rate with descending sort")
 
+	RPSCmd.Flags().IntVarP(&daysVar, "days", "d", 5, "get <days> days of rps")
+	RPSCmd.Flags().IntVarP(&showNumVar, "showNum", "n", 50, "show top <showNum> records of rps rank")
+
 	rootCmd.AddCommand(StatCmd)
 	rootCmd.AddCommand(MyStatCmd)
 	rootCmd.AddCommand(FetchDataCmd)
+	rootCmd.AddCommand(RPSCmd)
 }

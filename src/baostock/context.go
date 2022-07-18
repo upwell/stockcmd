@@ -55,6 +55,9 @@ func parseResp(respStr string) *ResponseMessage {
 	headerAttrs := strings.Split(respHeader, MessageSplit)
 	bodyAttrs := strings.Split(respBody, MessageSplit)
 
+	if len(respHeader) == 1 {
+		print(respStr)
+	}
 	bodyLength, _ := strconv.Atoi(headerAttrs[2])
 	return &ResponseMessage{
 		MsgType:    headerAttrs[1],
