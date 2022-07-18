@@ -80,21 +80,21 @@ func (ds *DailyStat) Row() []string {
 		nameStr = color.HiGreenString(ds.Name)
 	}
 	row = append(row, nameStr)
-	row = append(row, Float64String(ds.Now))
-	row = append(row, ChgString(ds.ChgToday, -3, 3))
-	row = append(row, Float64String(ds.Last))
-	row = append(row, ChgString(ds.ChgLast, -3, 3))
-	row = append(row, Float64String(ds.PE))
-	row = append(row, Float64String(ds.ChgMonth))
-	row = append(row, Float64String(ds.ChgLastMonth))
-	row = append(row, Float64String(ds.ChgYear))
-	row = append(row, ChgString(ds.ChgMax, -6, 5))
-	row = append(row, Float64String(ds.ChgMin))
-	row = append(row, Float64String(ds.Chg5))
-	row = append(row, Float64String(ds.Chg10))
-	row = append(row, Float64String(ds.Chg90))
-	row = append(row, Float64String(ds.Avg20))
-	row = append(row, Float64String(ds.Avg60))
+	row = append(row, util.Float64String(ds.Now))
+	row = append(row, util.ChgString(ds.ChgToday, -3, 3))
+	row = append(row, util.Float64String(ds.Last))
+	row = append(row, util.ChgString(ds.ChgLast, -3, 3))
+	row = append(row, util.Float64String(ds.PE))
+	row = append(row, util.Float64String(ds.ChgMonth))
+	row = append(row, util.Float64String(ds.ChgLastMonth))
+	row = append(row, util.Float64String(ds.ChgYear))
+	row = append(row, util.ChgString(ds.ChgMax, -6, 5))
+	row = append(row, util.Float64String(ds.ChgMin))
+	row = append(row, util.Float64String(ds.Chg5))
+	row = append(row, util.Float64String(ds.Chg10))
+	row = append(row, util.Float64String(ds.Chg90))
+	row = append(row, util.Float64String(ds.Avg20))
+	row = append(row, util.Float64String(ds.Avg60))
 	//row = append(row, Float64String(ds.Avg200))
 	row = append(row, ds.Code)
 	//row = append(row, Float64String(ds.PB))
@@ -151,7 +151,7 @@ func chgWithDf(df *dataframe.DataFrame, fn dataframe.FilterDataFrameFn) float64 
 	firstRow := filterDf.Row(n-1, false, dataframe.SeriesName)
 	lastClose := lastRow["close"].(float64)
 	firstPreClose := firstRow["preclose"].(float64)
-	return RoundChgRate((lastClose - firstPreClose) / firstPreClose)
+	return util.RoundChgRate((lastClose - firstPreClose) / firstPreClose)
 }
 
 func GetMaxMin(df *dataframe.DataFrame, days int) (max float64, min float64) {
@@ -197,7 +197,7 @@ func chgDays(df *dataframe.DataFrame, days int) float64 {
 	firstRow := df.Row(r, false, dataframe.SeriesName)
 	lastClose := lastRow["close"].(float64)
 	firstPreClose := firstRow["preclose"].(float64)
-	return RoundChgRate((lastClose - firstPreClose) / firstPreClose)
+	return util.RoundChgRate((lastClose - firstPreClose) / firstPreClose)
 }
 
 func avgDays(df *dataframe.DataFrame, days int) float64 {
@@ -211,7 +211,7 @@ func avgDays(df *dataframe.DataFrame, days int) float64 {
 		n = days
 	}
 	values = values[0:n]
-	return Round2(stat.Mean(values, nil))
+	return util.Round2(stat.Mean(values, nil))
 }
 
 func GetDataFrame(code string) (*dataframe.DataFrame, error) {
@@ -390,6 +390,7 @@ func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
 		t2 := time.Now()
 		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
 		store.WriteRecords(records)
+		// FIXME concurrent write slow, only one read-write transaction is allowed at a time
 		logger.SugarLog.Debugf("[%s] write records takes [%v]", code, time.Since(t2))
 	}
 
@@ -439,8 +440,8 @@ func GetDailyState(code string, period int) (*DailyStat, error) {
 		ChgMonth:     chgWithDf(df, thisMonthFilterFn),
 		ChgLastMonth: chgWithDf(df, lastMonthFilterFn),
 		ChgYear:      chgWithDf(df, thisYearFilterFn),
-		ChgMax:       RoundChgRate((hq.Now - max) / max),
-		ChgMin:       RoundChgRate((hq.Now - min) / min),
+		ChgMax:       util.RoundChgRate((hq.Now - max) / max),
+		ChgMin:       util.RoundChgRate((hq.Now - min) / min),
 		Avg20:        avgDays(df, 20),
 		Avg60:        avgDays(df, 60),
 		Avg200:       avgDays(df, 200),

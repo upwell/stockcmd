@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"hehan.net/my/stockcmd/util"
+
 	"hehan.net/my/stockcmd/tencent"
 
 	mapset "github.com/deckarep/golang-set"
@@ -102,8 +104,8 @@ func getStatChgs(basics []*store.StockBasic) []*StatChg {
 				return
 			}
 
-			sChg.MaxChg = stat.RoundChgRate((price - max) / max)
-			sChg.MinChg = stat.RoundChgRate((price - min) / min)
+			sChg.MaxChg = util.RoundChgRate((price - max) / max)
+			sChg.MinChg = util.RoundChgRate((price - min) / min)
 			if sChg.MaxChg == -100.0 || sChg.MinChg == -100.0 {
 				return
 			}
@@ -182,7 +184,7 @@ func printTable(chgs []*StatChg) {
 		if idx > 50 {
 			break
 		}
-		table.Append([]string{chg.Code, chg.Name, stat.Float64String(chg.MaxChg), stat.Float64String(chg.MinChg)})
+		table.Append([]string{chg.Code, chg.Name, util.Float64String(chg.MaxChg), util.Float64String(chg.MinChg)})
 	}
 	table.Render()
 }
@@ -201,7 +203,7 @@ func printTableRPS(rpss []*stat.RPS, numVar int) {
 		if idx > numVar {
 			break
 		}
-		table.Append([]string{rps.Code, rps.Name, stat.Float64String(rps.Value), stat.Float64String(rps.Change)})
+		table.Append([]string{rps.Code, rps.Name, util.Float64String(rps.Value), util.Float64String(rps.Change)})
 	}
 	table.Render()
 }

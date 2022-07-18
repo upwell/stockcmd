@@ -4,6 +4,8 @@ import (
 	"sort"
 	"sync"
 
+	"hehan.net/my/stockcmd/util"
+
 	"gonum.org/v1/gonum/floats"
 
 	"github.com/rocketlaunchr/dataframe-go"
@@ -86,7 +88,7 @@ func GetRPS(basics []*store.StockBasic, days int) []*RPS {
 		if right > left {
 			tmpV = 1
 		}
-		rps.Value = Round3(float64(right+left+tmpV) * 50.0 / float64(n))
+		rps.Value = util.Round3(float64(right+left+tmpV) * 50.0 / float64(n))
 	}
 
 	sort.Slice(rpss, func(i, j int) bool {
