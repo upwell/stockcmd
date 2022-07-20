@@ -4,6 +4,8 @@ import (
 	"sort"
 	"sync"
 
+	"hehan.net/my/stockcmd/redisstore"
+
 	"hehan.net/my/stockcmd/util"
 
 	"gonum.org/v1/gonum/floats"
@@ -48,7 +50,7 @@ func GetRPS(basics []*store.StockBasic, days int) []*RPS {
 				Code: basic.Code,
 				Name: basic.Name,
 			}
-			df, err := store.GetRecords(code, startDay, endDay)
+			df, err := redisstore.GetRecords(code, startDay, endDay)
 			if err != nil {
 				logger.SugarLog.Errorf("get records for [%s] error [%v]", code, err)
 				return

@@ -10,6 +10,8 @@ require (
 	github.com/levigross/grequests v0.0.0-20190908174114-253788527a1a
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/philippgille/gokv v0.6.0
+	github.com/philippgille/gokv/redis v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/rocketlaunchr/dataframe-go v0.0.0-20211025052708-a1030444159b
 	github.com/silenceper/pool v1.0.0
@@ -27,6 +29,7 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/chzyer/readline v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-redis/redis v6.15.6+incompatible // indirect
 	github.com/goccy/go-json v0.9.8 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
@@ -41,6 +44,8 @@ require (
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/opencontainers/runc v1.0.0-rc95 // indirect
+	github.com/philippgille/gokv/encoding v0.0.0-20191011213304-eb77f15b9c61 // indirect
+	github.com/philippgille/gokv/util v0.0.0-20191011213304-eb77f15b9c61 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rocketlaunchr/mysql-go v1.1.3 // indirect

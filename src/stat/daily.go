@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"hehan.net/my/stockcmd/redisstore"
+
 	"hehan.net/my/stockcmd/eastmoney"
 
 	"hehan.net/my/stockcmd/akshare"
@@ -342,14 +344,21 @@ func GetDataFrameAKShare(code string) (*dataframe.DataFrame, error) {
 }
 
 func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
-	t := store.GetLastTime(code)
-	endDay := now.BeginningOfDay()
+	t := redisstore.GetLastTime(code)
+
+	currentTime := time.Now()
+	var endDay time.Time
+	endDay = now.BeginningOfDay()
+	if currentTime.Hour() < 15 {
+		endDay = endDay.AddDate(0, 0, -1)
+	}
+
 	var startDay time.Time
 	if t.IsZero() {
 		logger.SugarLog.Infof("getting history data for %s, it would take some time ...", code)
 		startDay = endDay.AddDate(-1, 0, 0)
 	} else {
-		startDay = t.AddDate(0, 0, 1)
+		startDay = t
 
 		// skip weekend
 		switch startDay.Weekday() {
@@ -389,12 +398,12 @@ func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
 
 		t2 := time.Now()
 		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
-		store.WriteRecords(records)
+		redisstore.WriteRecords(records)
 		// FIXME concurrent write slow, only one read-write transaction is allowed at a time
 		logger.SugarLog.Debugf("[%s] write records takes [%v]", code, time.Since(t2))
 	}
 
-	df, err := store.GetRecords(code, endDay.AddDate(-1, 0, 0), endDay)
+	df, err := redisstore.GetRecords(code, endDay.AddDate(-1, 0, 0), endDay)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get records from db for [%s]", code)
 	}
@@ -402,7 +411,7 @@ func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
 }
 
 func GetDailyState(code string, period int) (*DailyStat, error) {
-	df, err := GetDataFrame(code)
+	df, err := GetDataFrameEastMoney(code)
 	if err != nil {
 		return nil, err
 	}

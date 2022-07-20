@@ -45,6 +45,14 @@ func (store ConfigStore) GetString(key string) (value string, existed bool, err 
 	return *val, existed, nil
 }
 
+func (store ConfigStore) GetStringOrDefault(key string, defaultVal string) (value string, err error) {
+	value, existed, err := store.GetString(key)
+	if !existed {
+		value = defaultVal
+	}
+	return
+}
+
 func (store ConfigStore) Get(key string, val interface{}) (err error, exist bool) {
 	var data []byte
 	err = DB.View(func(tx *bbolt.Tx) error {

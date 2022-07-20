@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"hehan.net/my/stockcmd/redisstore"
+
 	"hehan.net/my/stockcmd/akshare"
 
 	"hehan.net/my/stockcmd/task"
@@ -109,6 +111,7 @@ func showKDataCmdf(cmd *cobra.Command, args []string) error {
 
 func removeAllKDataCmdF(cmd *cobra.Command, args []string) error {
 	store.RecreateDailyBucket()
+	redisstore.RecreateDailyBucket()
 	return nil
 }
 

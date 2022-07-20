@@ -114,7 +114,7 @@ func (em EastMoney) GetDailyKData(code string, startDay time.Time, endDay time.T
 				Low:      parts[4],
 				Volume:   parts[5],
 				Amount:   parts[6],
-				ChgRate:  parts[7],
+				ChgRate:  parts[8],
 				PreClose: preClose,
 			}
 			preClose = KlineDaily.Close

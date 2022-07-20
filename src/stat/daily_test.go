@@ -58,3 +58,14 @@ func TestAllGetDataFrame(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestGetDataFrameEastMoney(t *testing.T) {
+	logger.InitLogger()
+	code := "sz.000893"
+	df, err := GetDataFrameEastMoney(code)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	print(df.Table())
+}
