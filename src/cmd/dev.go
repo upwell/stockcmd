@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"hehan.net/my/stockcmd/global"
+
 	"hehan.net/my/stockcmd/redisstore"
 
 	"hehan.net/my/stockcmd/akshare"
@@ -99,7 +101,7 @@ func removeKDataCmdF(cmd *cobra.Command, args []string) error {
 func showKDataCmdf(cmd *cobra.Command, args []string) error {
 	code := args[0]
 
-	df, err := stat.GetDataFrameEastMoney(code)
+	df, err := stat.GetDataFrame(global.GetDataSource(), code)
 	if err != nil {
 		fmt.Println(err)
 		return err

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"hehan.net/my/stockcmd/base"
 	"hehan.net/my/stockcmd/util"
 
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 
 var EM *EastMoney
 
+// EastMoney east money DataSource
 type EastMoney struct {
 }
 
@@ -64,7 +66,7 @@ func (em EastMoney) GetCodeIDMap() (map[string]string, error) {
 	return nil, nil
 }
 
-func (em EastMoney) GetDailyKData(code string, startDay time.Time, endDay time.Time) ([]KlineDaily, error) {
+func (em EastMoney) GetDailyKData(code string, startDay time.Time, endDay time.Time) ([]base.KlineDaily, error) {
 	secId := strings.ReplaceAll(code, "sh", "1")
 	secId = strings.ReplaceAll(secId, "sz", "0")
 	url := "http://push2his.eastmoney.com/api/qt/stock/kline/get"
@@ -94,7 +96,7 @@ func (em EastMoney) GetDailyKData(code string, startDay time.Time, endDay time.T
 		return nil, errors.Wrapf(err, "failed to parse response [%s]", resp.String())
 	}
 
-	result := make([]KlineDaily, 0, 64)
+	result := make([]base.KlineDaily, 0, 64)
 	dataJson := respJson["data"].(map[string]interface{})
 	preCloseFloat := dataJson["preKPrice"].(float64)
 	preClose := fmt.Sprintf("%.2f", preCloseFloat)
@@ -106,7 +108,7 @@ func (em EastMoney) GetDailyKData(code string, startDay time.Time, endDay time.T
 		}
 		for _, klineStr := range klinesArray {
 			parts := strings.Split(klineStr, ",")
-			KlineDaily := KlineDaily{
+			KlineDaily := base.KlineDaily{
 				Date:     parts[0],
 				Open:     parts[1],
 				Close:    parts[2],

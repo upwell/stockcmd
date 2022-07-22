@@ -1,4 +1,4 @@
-package hq
+package base
 
 type HQ struct {
 	Now       float64

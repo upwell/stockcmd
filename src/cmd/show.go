@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"hehan.net/my/stockcmd/global"
+
 	mapset "github.com/deckarep/golang-set"
 	"github.com/olekukonko/tablewriter"
 	"hehan.net/my/stockcmd/logger"
@@ -39,7 +41,7 @@ func showOnce(codes []string) {
 			wg.Add(1)
 			go func(code string) {
 				defer wg.Done()
-				ds, err := stat.GetDailyState(code, showPeriodVar)
+				ds, err := stat.GetDailyState(global.GetDataSource(), code, showPeriodVar)
 				if err == nil {
 					rets = append(rets, ds)
 				} else {

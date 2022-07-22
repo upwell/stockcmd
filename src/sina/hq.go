@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"hehan.net/my/stockcmd/base"
 	"hehan.net/my/stockcmd/hq"
 
 	"github.com/levigross/grequests"
@@ -15,9 +16,9 @@ import (
 type HQApi struct {
 }
 
-func GetLivePrices(codes []string) map[string]hq.HQ {
+func GetLivePrices(codes []string) map[string]base.HQ {
 	var wg sync.WaitGroup
-	ret := make(map[string]hq.HQ)
+	ret := make(map[string]base.HQ)
 
 	api := HQApi{}
 	for _, code := range codes {
@@ -35,9 +36,9 @@ func GetLivePrices(codes []string) map[string]hq.HQ {
 }
 
 // GetLivePrice code format should be: sh.000001
-func (api HQApi) GetHQ(code string) (hq.HQ, error) {
+func (api HQApi) GetHQ(code string) (base.HQ, error) {
 	code = hq.ConvertCode(code)
-	ret := hq.HQ{}
+	ret := base.HQ{}
 	resp, err := grequests.Get(HqURL+code, nil)
 	if err != nil {
 		return ret, errors.Wrapf(err, "failed to get live price for [%s]", code)

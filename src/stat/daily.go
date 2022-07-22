@@ -4,16 +4,13 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
+	"hehan.net/my/stockcmd/global"
+
+	"hehan.net/my/stockcmd/base"
+
 	"hehan.net/my/stockcmd/redisstore"
-
-	"hehan.net/my/stockcmd/eastmoney"
-
-	"hehan.net/my/stockcmd/akshare"
-
-	"hehan.net/my/stockcmd/tencent"
 
 	"hehan.net/my/stockcmd/util"
 
@@ -29,7 +26,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/now"
 	"github.com/pkg/errors"
-	"hehan.net/my/stockcmd/baostock"
 	"hehan.net/my/stockcmd/store"
 )
 
@@ -216,134 +212,7 @@ func avgDays(df *dataframe.DataFrame, days int) float64 {
 	return util.Round2(stat.Mean(values, nil))
 }
 
-func GetDataFrame(code string) (*dataframe.DataFrame, error) {
-	t := store.GetLastTime(code)
-	endDay := now.BeginningOfDay()
-	var startDay time.Time
-	if t.IsZero() {
-		logger.SugarLog.Infof("getting history data for %s, it would take some time ...", code)
-		startDay = endDay.AddDate(-1, 0, 0)
-	} else {
-		startDay = t.AddDate(0, 0, 1)
-
-		// skip weekend
-		switch startDay.Weekday() {
-		case time.Sunday:
-			startDay = startDay.AddDate(0, 0, 1)
-		case time.Saturday:
-			startDay = startDay.AddDate(0, 0, 2)
-		}
-	}
-	startDay = now.With(startDay).BeginningOfDay()
-
-	if endDay.After(startDay) {
-		logger.SugarLog.Infof("get history data for [%s] between [%s] and [%s]", code,
-			util.DateToStr(startDay), util.DateToStr(endDay))
-		v, err := baostock.BSPool.Get()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get baostock instance from pool")
-		}
-		bs := v.(*baostock.BaoStock)
-		t1 := time.Now()
-		rs, err := bs.GetDailyKData(code, startDay, endDay)
-		if err != nil {
-			baostock.BSPool.Close(v)
-			return nil, errors.Wrap(err, "get daily state failed")
-		}
-		records := make([]*store.Record, 0, 1024)
-		for {
-			hasNext, err := rs.Next()
-			if err != nil {
-				baostock.BSPool.Close(v)
-				return nil, errors.Wrap(err, "get daily state, error in loop")
-			}
-			if !hasNext {
-				break
-			}
-
-			seps := rs.GetRowData()
-			skipThisRow := false
-			for _, sep := range seps {
-				if len(sep) == 0 {
-					skipThisRow = true
-				}
-			}
-			if skipThisRow {
-				continue
-			}
-			date, _ := now.Parse(seps[0])
-			records = append(records, &store.Record{
-				Code: code,
-				T:    date,
-				Val:  strings.Join(seps, ","),
-			})
-		}
-		baostock.BSPool.Put(v)
-		store.WriteRecords(records)
-		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
-	}
-
-	df, err := store.GetRecords(code, endDay.AddDate(-1, 0, 0), endDay)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get records from db for [%s]", code)
-	}
-	return df, nil
-}
-
-func GetDataFrameAKShare(code string) (*dataframe.DataFrame, error) {
-	t := store.GetLastTime(code)
-	endDay := now.BeginningOfDay()
-	var startDay time.Time
-	if t.IsZero() {
-		logger.SugarLog.Infof("getting history data for %s, it would take some time ...", code)
-		startDay = endDay.AddDate(-1, 0, 0)
-	} else {
-		startDay = t.AddDate(0, 0, 1)
-
-		// skip weekend
-		switch startDay.Weekday() {
-		case time.Sunday:
-			startDay = startDay.AddDate(0, 0, 1)
-		case time.Saturday:
-			startDay = startDay.AddDate(0, 0, 2)
-		}
-	}
-	startDay = now.With(startDay).BeginningOfDay()
-
-	if endDay.After(startDay) {
-		logger.SugarLog.Infof("get history data for [%s] between [%s] and [%s]", code,
-			util.DateToStr(startDay), util.DateToStr(endDay))
-
-		t1 := time.Now()
-		dailyDataArray := akshare.AK.GetDailyKData(code, startDay, endDay)
-		records := make([]*store.Record, 0, 1024)
-
-		for _, kdata := range dailyDataArray {
-			//date,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ
-			val := fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f,%f,%f,0,0",
-				util.DateToStr(time.Time(kdata.Date)), kdata.Open, kdata.High, kdata.Low, kdata.Close, 0.0,
-				kdata.Volume, kdata.Amount, kdata.ChgRate)
-
-			record := &store.Record{
-				Code: code,
-				T:    time.Time(kdata.Date),
-				Val:  val,
-			}
-			records = append(records, record)
-		}
-
-		store.WriteRecords(records)
-		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
-	}
-
-	df, err := store.GetRecords(code, endDay.AddDate(-1, 0, 0), endDay)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get records from db for [%s]", code)
-	}
-	return df, nil
-}
-
-func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
+func GetDataFrame(dataSource base.DataSource, code string) (*dataframe.DataFrame, error) {
 	t := redisstore.GetLastTime(code)
 
 	currentTime := time.Now()
@@ -375,7 +244,7 @@ func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
 			util.DateToStr(startDay), util.DateToStr(endDay))
 
 		t1 := time.Now()
-		dailyDataArray, err := eastmoney.EM.GetDailyKData(code, startDay, endDay)
+		dailyDataArray, err := dataSource.GetDailyKData(code, startDay, endDay)
 		if err != nil {
 			logger.SugarLog.Errorf("failed to get daily kdata for [%s]", code)
 			return nil, errors.Wrapf(err, "failed to get daily kdata for [%s]", code)
@@ -399,7 +268,6 @@ func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
 		t2 := time.Now()
 		logger.SugarLog.Debugf("[%s] get remote data takes [%v]", code, time.Since(t1))
 		redisstore.WriteRecords(records)
-		// FIXME concurrent write slow, only one read-write transaction is allowed at a time
 		logger.SugarLog.Debugf("[%s] write records takes [%v]", code, time.Since(t2))
 	}
 
@@ -410,14 +278,14 @@ func GetDataFrameEastMoney(code string) (*dataframe.DataFrame, error) {
 	return df, nil
 }
 
-func GetDailyState(code string, period int) (*DailyStat, error) {
-	df, err := GetDataFrameEastMoney(code)
+func GetDailyState(dataSource base.DataSource, code string, period int) (*DailyStat, error) {
+	df, err := GetDataFrame(dataSource, code)
 	if err != nil {
 		return nil, err
 	}
 
 	name := store.GetName(code, false)
-	api := tencent.HQApi{}
+	api := global.GetHQSource()
 	hq, err := api.GetHQ(code)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get hq from sina")

@@ -10,8 +10,6 @@ require (
 	github.com/levigross/grequests v0.0.0-20190908174114-253788527a1a
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/philippgille/gokv v0.6.0
-	github.com/philippgille/gokv/redis v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/rocketlaunchr/dataframe-go v0.0.0-20211025052708-a1030444159b
 	github.com/silenceper/pool v1.0.0

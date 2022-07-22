@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	"hehan.net/my/stockcmd/base"
+
 	"github.com/levigross/grequests"
 	"github.com/pkg/errors"
 	"hehan.net/my/stockcmd/hq"
@@ -14,11 +16,11 @@ const hqURL = "http://qt.gtimg.cn/q="
 type HQApi struct {
 }
 
-func (api HQApi) GetHQ(code string) (hq.HQ, error) {
+func (api HQApi) GetHQ(code string) (base.HQ, error) {
 	//defer util.MeasureTime("GetHQ")()
 
 	code = hq.ConvertCode(code)
-	ret := hq.HQ{}
+	ret := base.HQ{}
 	resp, err := grequests.Get(hqURL+code, nil)
 	if err != nil {
 		return ret, errors.Wrapf(err, "failed to get live price for [%s]", code)

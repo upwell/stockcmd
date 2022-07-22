@@ -9,8 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/silenceper/pool"
+
 	"github.com/jinzhu/now"
 
+	"hehan.net/my/stockcmd/base"
 	"hehan.net/my/stockcmd/config"
 	"hehan.net/my/stockcmd/logger"
 	"hehan.net/my/stockcmd/util"
@@ -19,6 +22,12 @@ import (
 )
 
 var BS *BaoStock
+var BSP *BaoStockPool
+
+// BaoStockPool baostock DataSource
+type BaoStockPool struct {
+	BSPool pool.Pool
+}
 
 type BaoStock struct {
 	Conn     net.Conn
@@ -38,6 +47,7 @@ type ResponseMessage struct {
 
 func init() {
 	BS = NewBaoStockInstance()
+	BSP, _ = NewBaoStockPoolInstance()
 }
 
 func NewBaoStockInstance() *BaoStock {
@@ -47,6 +57,74 @@ func NewBaoStockInstance() *BaoStock {
 		return nil
 	}
 	return &BaoStock{Conn: conn}
+}
+
+func NewBaoStockPoolInstance() (*BaoStockPool, error) {
+	poolConfig := &pool.Config{
+		InitialCap:  0,
+		MaxIdle:     3,
+		MaxCap:      4,
+		Factory:     factory,
+		Close:       close,
+		IdleTimeout: 60 * time.Second,
+	}
+	p, err := pool.NewChannelPool(poolConfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create baostock pool")
+	}
+	return &BaoStockPool{
+		BSPool: p,
+	}, nil
+}
+
+func (pool BaoStockPool) GetDailyKData(code string, startDay time.Time, endDay time.Time) ([]base.KlineDaily, error) {
+	v, err := pool.BSPool.Get()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get baostock instance from pool")
+	}
+	bs := v.(*BaoStock)
+	rs, err := bs.GetDailyKData(code, startDay, endDay)
+	if err != nil {
+		pool.BSPool.Close(v)
+		return nil, errors.Wrap(err, "get daily state failed")
+	}
+
+	result := make([]base.KlineDaily, 0, 64)
+	for {
+		hasNext, err := rs.Next()
+		if err != nil {
+			pool.BSPool.Close(v)
+			return nil, errors.Wrap(err, "get daily state, error in loop")
+		}
+		if !hasNext {
+			break
+		}
+
+		seps := rs.GetRowData()
+		skipThisRow := false
+		for _, sep := range seps {
+			if len(sep) == 0 {
+				skipThisRow = true
+			}
+		}
+		if skipThisRow {
+			continue
+		}
+		kline := base.KlineDaily{
+			Date:     seps[0],
+			Open:     seps[1],
+			Close:    seps[4],
+			High:     seps[2],
+			Low:      seps[3],
+			Volume:   seps[6],
+			Amount:   seps[7],
+			ChgRate:  seps[8],
+			PreClose: seps[5],
+		}
+		result = append(result, kline)
+	}
+	pool.BSPool.Put(v)
+	return result, nil
 }
 
 func parseResp(respStr string) *ResponseMessage {

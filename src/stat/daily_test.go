@@ -6,6 +6,10 @@ import (
 	"sync"
 	"testing"
 
+	"hehan.net/my/stockcmd/baostock"
+
+	"hehan.net/my/stockcmd/eastmoney"
+
 	"hehan.net/my/stockcmd/logger"
 
 	"hehan.net/my/stockcmd/store"
@@ -18,7 +22,7 @@ func TestFields(t *testing.T) {
 
 func TestGetDailyState(t *testing.T) {
 	code := "sz.002475"
-	ds, err := GetDailyState(code, 30)
+	ds, err := GetDailyState(eastmoney.EM, code, 30)
 	if err != nil {
 		t.Errorf("get daily state error [%v]", err)
 		return
@@ -31,7 +35,7 @@ func TestGetDailyState(t *testing.T) {
 func TestGetDataFrame(t *testing.T) {
 	logger.InitLogger()
 	code := "sz.300821"
-	df, err := GetDataFrame(code)
+	df, err := GetDataFrame(baostock.BSP, code)
 	if err != nil {
 		t.Error(err)
 		return
@@ -49,7 +53,7 @@ func TestAllGetDataFrame(t *testing.T) {
 		wg.Add(1)
 		go func(code string) {
 			defer wg.Done()
-			_, err := GetDataFrame(code)
+			_, err := GetDataFrame(eastmoney.EM, code)
 			if err != nil {
 				t.Errorf("get data frame error [%v]", err)
 				return
@@ -62,7 +66,7 @@ func TestAllGetDataFrame(t *testing.T) {
 func TestGetDataFrameEastMoney(t *testing.T) {
 	logger.InitLogger()
 	code := "sz.000893"
-	df, err := GetDataFrameEastMoney(code)
+	df, err := GetDataFrame(eastmoney.EM, code)
 	if err != nil {
 		t.Error(err)
 		return
