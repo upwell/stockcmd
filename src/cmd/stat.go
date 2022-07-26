@@ -64,6 +64,8 @@ var sortByIncrease bool
 
 var daysVar int
 var showNumVar int
+var isSimpleMode bool
+var endDayVar string
 
 func getStatChgs(basics []*store.StockBasic) []*StatChg {
 	chgs := make([]*StatChg, 0, 512)
@@ -135,8 +137,30 @@ func statCmdF(cmd *cobra.Command, args []string) error {
 
 func rpsCmdF(cmd *cobra.Command, args []string) error {
 	basics := store.GetBasics()
-	rpss := stat.GetRPS(basics, daysVar)
-	printTableRPS(rpss, showNumVar)
+
+	endDay := time.Time{}
+	if len(endDayVar) != 0 {
+		endDay, _ = now.Parse(endDayVar)
+	}
+
+	rpss := stat.GetRPS(basics, daysVar, endDay)
+
+	if !isSimpleMode {
+		printTableRPS(rpss, showNumVar)
+	} else {
+		col := 5
+		for idx, rps := range rpss {
+			if idx >= showNumVar {
+				break
+			}
+			code := rps.Code[3:]
+			if idx != 0 && idx%col == (col-1) {
+				println(code)
+			} else {
+				print(code + " ")
+			}
+		}
+	}
 	return nil
 }
 
@@ -200,7 +224,7 @@ func printTableRPS(rpss []*stat.RPS, numVar int) {
 	table.SetHeader([]string{"Code", "Name", "RPS", "Chg"})
 
 	for idx, rps := range rpss {
-		if idx > numVar {
+		if idx >= numVar {
 			break
 		}
 		table.Append([]string{rps.Code, rps.Name, util.Float64String(rps.Value), util.Float64String(rps.Change)})
@@ -286,6 +310,8 @@ func init() {
 
 	RPSCmd.Flags().IntVarP(&daysVar, "days", "d", 5, "get <days> days of rps")
 	RPSCmd.Flags().IntVarP(&showNumVar, "showNum", "n", 50, "show top <showNum> records of rps rank")
+	RPSCmd.Flags().BoolVarP(&isSimpleMode, "simple", "s", false, "only show the code of results")
+	RPSCmd.Flags().StringVarP(&endDayVar, "endDay", "e", "", "end day of rps")
 
 	rootCmd.AddCommand(StatCmd)
 	rootCmd.AddCommand(MyStatCmd)

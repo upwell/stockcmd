@@ -3,6 +3,7 @@ package stat
 import (
 	"sort"
 	"sync"
+	"time"
 
 	"hehan.net/my/stockcmd/redisstore"
 
@@ -32,10 +33,13 @@ func min(a, b int) int {
 	return b
 }
 
-func GetRPS(basics []*store.StockBasic, days int) []*RPS {
+func GetRPS(basics []*store.StockBasic, days int, endDay time.Time) []*RPS {
 	rpss := make([]*RPS, 0, 512)
 	changes := make([]float64, 0, 512)
-	endDay := now.BeginningOfDay()
+
+	if endDay.IsZero() {
+		endDay = now.BeginningOfDay()
+	}
 	var wg sync.WaitGroup
 
 	// 取2倍日期数据
@@ -59,11 +63,6 @@ func GetRPS(basics []*store.StockBasic, days int) []*RPS {
 				logger.SugarLog.Errorf("get records return zero rows for [%s]", code)
 				return
 			}
-			price := store.GetHQ(code)
-			if price == 0.00 {
-				logger.SugarLog.Infof("failed to get price for [%s]", code)
-				return
-			}
 
 			closeIdx, err := df.NameToColumn("close")
 			if err != nil {
@@ -71,6 +70,18 @@ func GetRPS(basics []*store.StockBasic, days int) []*RPS {
 				return
 			}
 			closes := df.Series[closeIdx].(*dataframe.SeriesFloat64)
+
+			var price float64
+			if now.New(endDay).BeginningOfDay() == now.BeginningOfDay() {
+				price = store.GetHQ(code)
+				if price == 0.00 {
+					logger.SugarLog.Infof("failed to get price for [%s]", code)
+					return
+				}
+			} else {
+				price = closes.Values[0]
+			}
+
 			rps.Change = price / closes.Values[min(len(closes.Values)-1, days)]
 
 			rpss = append(rpss, rps)
