@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jinzhu/now"
+
 	"hehan.net/my/stockcmd/base"
 	"hehan.net/my/stockcmd/util"
 
@@ -127,4 +129,68 @@ func (em EastMoney) GetDailyKData(code string, startDay time.Time, endDay time.T
 	}
 
 	return result, nil
+}
+
+func (em EastMoney) GetLastDividendDay(code string) (time.Time, error) {
+	codeParts := strings.Split(code, ".")
+	url := "https://datacenter-web.eastmoney.com/api/data/v1/get"
+	params := map[string]string{
+		"callback":     "jQuery112306373219885568009_1664246756161",
+		"sortColumns":  "REPORT_DATE",
+		"sortTypes":    "-1",
+		"pageSize":     "50",
+		"pageNumber":   "1",
+		"reportName":   "RPT_SHAREBONUS_DET",
+		"columns":      "ALL",
+		"quoteColumns": "",
+		"js":           `{"data":(x),"pages":(tp)}`,
+		"source":       "WEB",
+		"client":       "WEB",
+		"filter":       `(SECURITY_CODE="` + codeParts[1] + `")`,
+	}
+
+	resp, err := grequests.Get(url, &grequests.RequestOptions{Params: params})
+	if err != nil {
+		return time.Time{}, errors.Wrapf(err, "failed to request [%s] with [%v]", url, err)
+	}
+	if resp.StatusCode != 200 {
+		return time.Time{}, errors.Errorf("failed to request [%s] with status code [%d]",
+			url, resp.StatusCode)
+	}
+
+	// response string format: jQuery1122_11122({"version": ""})
+	// get the json string
+	rawRespStr := resp.String()
+	startIdx := strings.Index(rawRespStr, "(")
+	endIdx := strings.LastIndex(rawRespStr, ")")
+	jsonStr := rawRespStr[startIdx+1 : endIdx]
+
+	var respJson map[string]interface{}
+	err = json.Unmarshal([]byte(jsonStr), &respJson)
+	if err != nil {
+		return time.Time{}, errors.Wrapf(err, "failed to parse response [%s]", jsonStr)
+	}
+
+	resultItr := respJson["result"]
+	if resultItr == nil {
+		return time.Time{}, nil
+	}
+	resultJson := resultItr.(map[string]interface{})
+
+	dataJsonArray := resultJson["data"].([]interface{})
+	if len(dataJsonArray) == 0 {
+		return time.Time{}, nil
+	}
+
+	latestRecord := dataJsonArray[0].(map[string]interface{})
+	exDivDateItr := latestRecord["EX_DIVIDEND_DATE"]
+	if exDivDateItr == nil {
+		return time.Time{}, nil
+	}
+
+	ret, err := now.Parse(exDivDateItr.(string))
+	if err != nil {
+		return time.Time{}, errors.Errorf("wrong date string format: [%s]", latestRecord["EX_DIVIDEND_DATE"].(string))
+	}
+	return ret, nil
 }

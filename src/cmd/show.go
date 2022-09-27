@@ -7,15 +7,14 @@ import (
 	"time"
 
 	"hehan.net/my/stockcmd/global"
+	"hehan.net/my/stockcmd/task"
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/olekukonko/tablewriter"
-	"hehan.net/my/stockcmd/logger"
-	"hehan.net/my/stockcmd/stat"
-	"hehan.net/my/stockcmd/task"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"hehan.net/my/stockcmd/logger"
+	"hehan.net/my/stockcmd/stat"
 	"hehan.net/my/stockcmd/store"
 )
 

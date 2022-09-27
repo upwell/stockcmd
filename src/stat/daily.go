@@ -227,7 +227,7 @@ func GetDataFrame(dataSource base.DataSource, code string) (*dataframe.DataFrame
 		logger.SugarLog.Infof("getting history data for %s, it would take some time ...", code)
 		startDay = endDay.AddDate(-1, 0, 0)
 	} else {
-		startDay = t
+		startDay = t.AddDate(0, 0, 1)
 
 		// skip weekend
 		switch startDay.Weekday() {
@@ -239,7 +239,7 @@ func GetDataFrame(dataSource base.DataSource, code string) (*dataframe.DataFrame
 	}
 	startDay = now.With(startDay).BeginningOfDay()
 
-	if endDay.After(startDay) {
+	if !endDay.Before(startDay) {
 		logger.SugarLog.Infof("get history data for [%s] between [%s] and [%s]", code,
 			util.DateToStr(startDay), util.DateToStr(endDay))
 

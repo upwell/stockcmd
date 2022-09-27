@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"sort"
 	"strings"
@@ -44,9 +43,9 @@ var MyStatCmd = &cobra.Command{
 }
 
 var FetchDataCmd = &cobra.Command{
-	Use:     "fetchData",
+	Use:     "fetch",
 	Short:   "fetch hq and record",
-	Example: "fetchData",
+	Example: "fetch",
 	RunE:    fetchDataCmdF,
 }
 
@@ -235,39 +234,11 @@ func printTableRPS(rpss []*stat.RPS, numVar int) {
 func fetchDataCmdF(cmd *cobra.Command, args []string) error {
 	codes := store.GetCodes()
 
-	fmt.Printf("fetch hq data ...\n")
-	start := time.Now()
-	var wg sync.WaitGroup
-	hqs := make([]*store.StockHQ, 0, 512)
-	for _, code := range codes {
-		wg.Add(1)
-		api := global.GetHQSource()
-		go func(code string) {
-			defer wg.Done()
-			v, err := api.GetHQ(code)
-			if err != nil {
-				fmt.Printf("failed to get price for [%s] with error [%v]\n", code, err)
-				return
-			}
-			if v.IsSuspend {
-				fmt.Printf("%s is suspend\n", code)
-			}
-			if v.Now == 0.00 && v.Last == 0.00 {
-				fmt.Printf("%s now and last is zero\n", code)
-			}
-			hq := &store.StockHQ{
-				Code:  code,
-				Price: fmt.Sprintf("%f", v.Now),
-			}
-			hqs = append(hqs, hq)
-		}(code)
-	}
-
-	wg.Wait()
-	store.BulkWriteHQ(hqs)
-	fmt.Printf("fetch hq data done, take [%s], start fetch history records ... \n", time.Since(start))
+	// fetch hq data
+	stat.FetchAllHQ()
 
 	// use channel to control the number of concurrent fetch tasks
+	var wg sync.WaitGroup
 	fetchCh := make(chan string, 64)
 	go func() {
 		for {

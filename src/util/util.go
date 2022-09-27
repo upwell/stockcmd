@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -63,6 +64,14 @@ func Float64String(f float64) string {
 	return fmt.Sprintf("%.2f", f)
 }
 
+func JsonString(j map[string]interface{}) string {
+	jBytes, err := json.Marshal(j)
+	if err != nil {
+		return ""
+	}
+	return string(jBytes)
+}
+
 func ChgString(chg float64, fallRate float64, riseRate float64) string {
 	chgStr := Float64String(chg)
 	post := ""
@@ -85,4 +94,17 @@ func ChgString(chg float64, fallRate float64, riseRate float64) string {
 		chgStr = color.GreenString(chgStr)
 	}
 	return chgStr
+}
+
+func IsTradeTime(t time.Time) bool {
+	weekday := t.Weekday()
+	if weekday == time.Sunday || weekday == time.Saturday {
+		return false
+	}
+
+	if t.Hour() < 9 || t.Hour() >= 15 {
+		return false
+	}
+
+	return true
 }

@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"hehan.net/my/stockcmd/store"
+
 	"github.com/jinzhu/now"
 
 	"hehan.net/my/stockcmd/logger"
@@ -24,4 +26,27 @@ func TestEastMoney_GetDailyKData(t *testing.T) {
 	}
 	println(time.Now().Hour())
 	print(dataList[len(dataList)-1].Date)
+}
+
+func TestEastMoney_GetLastDividendDay(t *testing.T) {
+	logger.InitLogger()
+
+	lastT, err := EM.GetLastDividendDay("sh.688008")
+	if err != nil {
+		println(err)
+		t.FailNow()
+	}
+	println(lastT.String())
+}
+
+func TestEastMoney_AllGetLastDividendDay(t *testing.T) {
+	start := time.Now()
+
+	codeSet := store.GetAllStockCodes()
+	for code := range codeSet.Iter() {
+		d, _ := EM.GetLastDividendDay(code.(string))
+		println(d.String())
+	}
+
+	println(time.Since(start).String())
 }

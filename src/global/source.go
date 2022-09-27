@@ -1,6 +1,8 @@
 package global
 
 import (
+	"math/rand"
+
 	"hehan.net/my/stockcmd/baostock"
 	"hehan.net/my/stockcmd/base"
 	"hehan.net/my/stockcmd/eastmoney"
@@ -31,4 +33,15 @@ func GetHQSource() base.HQApi {
 	default:
 		return tencent.HQApi{}
 	}
+}
+
+func GetRandomHQSource() base.HQApi {
+	r := rand.Int()
+	switch r % 2 {
+	case 0:
+		return tencent.HQApi{}
+	case 1:
+		return sina.HQApi{}
+	}
+	return tencent.HQApi{}
 }

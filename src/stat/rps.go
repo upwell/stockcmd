@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"hehan.net/my/stockcmd/global"
+
 	"hehan.net/my/stockcmd/redisstore"
 
 	"hehan.net/my/stockcmd/util"
@@ -42,6 +44,11 @@ func GetRPS(basics []*store.StockBasic, days int, endDay time.Time) []*RPS {
 	}
 	var wg sync.WaitGroup
 
+	if now.New(endDay).BeginningOfDay() == now.BeginningOfDay() {
+		// 获取当前行情数据
+		FetchAllHQ()
+	}
+
 	// 取2倍日期数据
 	startDay := endDay.AddDate(0, 0, -(days * 2))
 	for _, basic := range basics {
@@ -54,6 +61,7 @@ func GetRPS(basics []*store.StockBasic, days int, endDay time.Time) []*RPS {
 				Code: basic.Code,
 				Name: basic.Name,
 			}
+			GetDataFrame(global.GetDataSource(), code)
 			df, err := redisstore.GetRecords(code, startDay, endDay)
 			if err != nil {
 				logger.SugarLog.Errorf("get records for [%s] error [%v]", code, err)
@@ -81,6 +89,12 @@ func GetRPS(basics []*store.StockBasic, days int, endDay time.Time) []*RPS {
 			} else {
 				price = closes.Values[0]
 			}
+
+			//if code == "sz.001236" {
+			//	println(df.Table())
+			//	println(price)
+			//	println(closes.Values[5])
+			//}
 
 			rps.Change = price / closes.Values[min(len(closes.Values)-1, days)]
 
