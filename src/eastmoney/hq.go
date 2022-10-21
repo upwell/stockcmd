@@ -152,7 +152,9 @@ func (api HQApi) GetAllHQ() ([]*store.StockHQ, error) {
 		}
 		priceFloat, ok := hqJson["f2"].(float64)
 		if !ok {
-			logger.SugarLog.Warnf("failed to get price for [%s]", code)
+			//hqStr, _ := json.Marshal(hqJson)
+			//println(string(hqStr))
+			logger.SugarLog.Debugf("failed to get price for [%s]", code)
 			continue
 		}
 

@@ -31,6 +31,16 @@ func TestGetBasic(t *testing.T) {
 	fmt.Println(basic)
 }
 
+func TestGetBasicSingle(t *testing.T) {
+	code := "sz.000024"
+	basic := GetBasic(code)
+	if basic == nil {
+		t.Errorf("failed to get basic for [%s] ", code)
+		return
+	}
+	fmt.Println(basic)
+}
+
 func TestGetName(t *testing.T) {
 	code := "sz.002049"
 	name := GetName(code, true)

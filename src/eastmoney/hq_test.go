@@ -15,6 +15,7 @@ func TestHQApi_GetAllHQ(t *testing.T) {
 	}
 	if len(result) == 0 {
 		t.Errorf("empty result")
+		return
 	}
 
 	println(result[0].Code)
