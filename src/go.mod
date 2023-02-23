@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/fatih/color v1.13.0
+	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/iancoleman/strcase v0.2.0
 	github.com/jinzhu/now v1.1.5
 	github.com/levigross/grequests v0.0.0-20190908174114-253788527a1a
@@ -17,7 +18,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.etcd.io/bbolt v1.3.6
 	go.uber.org/zap v1.21.0
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	gonum.org/v1/gonum v0.11.0
 	gotest.tools v2.2.0+incompatible
 )
@@ -27,7 +28,6 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/chzyer/readline v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-redis/redis v6.15.6+incompatible // indirect
 	github.com/goccy/go-json v0.9.8 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
@@ -42,8 +42,6 @@ require (
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/opencontainers/runc v1.0.0-rc95 // indirect
-	github.com/philippgille/gokv/encoding v0.0.0-20191011213304-eb77f15b9c61 // indirect
-	github.com/philippgille/gokv/util v0.0.0-20191011213304-eb77f15b9c61 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rocketlaunchr/mysql-go v1.1.3 // indirect
@@ -57,7 +55,7 @@ require (
 	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983 // indirect
 	golang.org/x/net v0.0.0-20220708220712-1185a9018129 // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
-	golang.org/x/sys v0.0.0-20220712014510-0a85c31ab51e // indirect
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
