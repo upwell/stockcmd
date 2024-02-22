@@ -58,7 +58,7 @@ require (
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
 
 replace github.com/olekukonko/tablewriter => ./mydeps/tablewriter
